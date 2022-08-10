@@ -1,0 +1,8 @@
+---
+If:
+  PathMatch: "ChibiOS/*"
+CompileFlags:
+  Remove: "-W*"  
+Diagnostics:
+  Suppress: "*"
+---
