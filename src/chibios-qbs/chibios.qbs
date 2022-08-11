@@ -91,7 +91,8 @@ Project {
             "ports/common/ARMCMx",
             "ports/STM32/" + project.MCU_FAMILY,
             "ports/STM32/LLD/USART",
-            "osal/rt-nil"
+            "osal/rt-nil",
+            "lib/streams",
         ].map(function(path){ return FileInfo.joinPaths(halPath, path) })
         .concat(lldPaths)
 
@@ -101,6 +102,15 @@ Project {
         }
 
         cpp.includePaths: includePaths
+
+        Group {
+            name: "streams"
+            prefix: halPath + "lib/streams/"
+            files: [
+                "*.h",
+                "*.c"
+            ]
+        }
 
         Group {
             name: "drivers"

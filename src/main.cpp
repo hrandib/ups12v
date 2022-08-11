@@ -14,31 +14,97 @@
     limitations under the License.
 */
 
+#include <stdio.h>
+#include <string.h>
+
+#include "ch.h"
 #include "hal.h"
 
-/*
- * This is a periodic thread that does absolutely nothing except flashing
- * a LED.
- */
-// static THD_WORKING_AREA(waThread1, 128);
-// static THD_FUNCTION(Thread1, arg)
-//{
+#include "chprintf.h"
+#include "shell.h"
 
-//    (void)arg;
-//    chRegSetThreadName("blinker");
-//    palSetPadMode(GPIOC, 13, PAL_MODE_OUTPUT_PUSHPULL);
-//    while(true) {
-//        palSetPad(GPIOC, 13); /* Orange.  */
-//        chThdSleepMilliseconds(500);
-//        palClearPad(GPIOC, 13); /* Orange.  */
-//        chThdSleepMilliseconds(500);
-//    }
-//}
+#include "usbcfg.h"
+
+#define PORTAB_BLINK_LED1 LINE_LED
+
+/*===========================================================================*/
+/* Command line related.                                                     */
+/*===========================================================================*/
+
+#define SHELL_WA_SIZE THD_WORKING_AREA_SIZE(2048)
+
+/* Can be measured using dd if=/dev/xxxx of=/dev/null bs=512 count=10000.*/
+static void cmd_write(BaseSequentialStream* chp, int argc, char* argv[])
+{
+    static uint8_t buf[] = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+    (void)argv;
+    if(argc > 0) {
+        chprintf(chp, "Usage: write\r\n");
+        return;
+    }
+
+    while(chnGetTimeout((BaseChannel*)chp, TIME_IMMEDIATE) == Q_TIMEOUT) {
+#if 1
+        /* Writing in channel mode.*/
+        chnWrite(&PORTAB_SDU1, buf, sizeof buf - 1);
+#else
+        /* Writing in buffer mode.*/
+        (void)obqGetEmptyBufferTimeout(&PORTAB_SDU1.obqueue, TIME_INFINITE);
+        memcpy(PORTAB_SDU1.obqueue.ptr, buf, SERIAL_USB_BUFFERS_SIZE);
+        obqPostFullBuffer(&PORTAB_SDU1.obqueue, SERIAL_USB_BUFFERS_SIZE);
+#endif
+    }
+    chprintf(chp, "\r\n\nstopped\r\n");
+}
+
+static const ShellCommand commands[] = {{"write", cmd_write}, {NULL, NULL}};
+
+static const ShellConfig shell_cfg1 = {(BaseSequentialStream*)&PORTAB_SDU1, commands};
+
+/*===========================================================================*/
+/* Generic code.                                                             */
+/*===========================================================================*/
+
+/*
+ * LED blinker thread, times are in milliseconds.
+ */
+static THD_WORKING_AREA(waThread1, 128);
+static THD_FUNCTION(Thread1, arg)
+{
+
+    (void)arg;
+    chRegSetThreadName("blinker");
+    while(true) {
+        systime_t time;
+
+        time = serusbcfg.usbp->state == USB_ACTIVE ? 250 : 500;
+        palClearLine(PORTAB_BLINK_LED1);
+        chThdSleepMilliseconds(time);
+        palSetLine(PORTAB_BLINK_LED1);
+        chThdSleepMilliseconds(time);
+    }
+}
 
 /*
  * Application entry point.
  */
-int main()
+int main(void)
 {
 
     /*
@@ -52,25 +118,40 @@ int main()
     chSysInit();
 
     /*
-     * Activates the serial driver 2 using the driver default configuration.
-     * PA2(TX) and PA3(RX) are routed to USART2.
+     * Initializes a serial-over-USB CDC driver.
      */
-    //    sdStart(&SD2, NULL);
-    //    palSetPadMode(GPIOA, 2, PAL_MODE_ALTERNATE(7));
-    //    palSetPadMode(GPIOA, 3, PAL_MODE_ALTERNATE(7));
+    sduObjectInit(&PORTAB_SDU1);
+    sduStart(&PORTAB_SDU1, &serusbcfg);
 
     /*
-     * Creates the example thread.
+     * Activates the USB driver and then the USB bus pull-up on D+.
+     * Note, a delay is inserted in order to not have to disconnect the cable
+     * after a reset.
      */
-    //    chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, Thread1,
-    //    NULL);
+    usbDisconnectBus(serusbcfg.usbp);
+    chThdSleepMilliseconds(1500);
+    usbStart(serusbcfg.usbp, &usbcfg);
+    usbConnectBus(serusbcfg.usbp);
 
     /*
-     * Normal main() thread activity, in this demo it does nothing except
-     * sleeping in a loop and check the button state.
+     * Shell manager initialization.
+     */
+    shellInit();
+
+    /*
+     * Creates the blinker thread.
+     */
+    chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, Thread1, NULL);
+
+    /*
+     * Normal main() thread activity, spawning shells.
      */
     while(true) {
-        palToggleLine(LINE_LED); /* Orange.  */
-        chThdSleepMilliseconds(10);
+        if(PORTAB_SDU1.config->usbp->state == USB_ACTIVE) {
+            thread_t* shelltp =
+              chThdCreateFromHeap(NULL, SHELL_WA_SIZE, "shell", NORMALPRIO + 1, shellThread, (void*)&shell_cfg1);
+            chThdWait(shelltp); /* Waiting termination.             */
+        }
+        chThdSleepMilliseconds(1000);
     }
 }

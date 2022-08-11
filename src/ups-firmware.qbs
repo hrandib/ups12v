@@ -43,7 +43,8 @@ Project {
             cpp.includePaths: [
                 "config",
                 "board",
-                "utility"
+                "utility",
+                "usb"
             ]
 
             cpp.defines: [
@@ -67,7 +68,7 @@ Project {
                 files: [
                     "halconf.h",
                     "mcuconf.h",
-                    "chconf.h"
+                    "chconf.h",
                 ]
             }
 
@@ -97,6 +98,10 @@ Project {
         consoleApplication: false
         cpp.executableSuffix: ".elf"
 
+        cpp.includePaths: [
+            project.CH_PATH + "/os/various/shell/"
+        ]
+
         Group {
             name: "Compiled object file"
             fileTagsFilter: "application"
@@ -125,6 +130,26 @@ Project {
             prefix: project.CH_PATH + "/os/various/"
             files: [
                 "syscalls.c"
+            ]
+        }
+
+        Group {
+            name: "usb"
+            prefix: "usb/"
+            files: [
+                "usbcfg.h",
+                "usbcfg.c"
+            ]
+        }
+
+        Group {
+            name: "shell"
+            prefix: project.CH_PATH + "/os/various/shell/"
+            files: [
+                "shell.h",
+                "shell.c",
+                "shell_cmd.h",
+                "shell_cmd.c",
             ]
         }
 
