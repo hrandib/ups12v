@@ -16,8 +16,7 @@
 
 #include "hal.h"
 
-#define PORTAB_USB1 USBD1
-//#define PORTAB_SDU1 SDU1
+#include "portab.h"
 
 /* Virtual serial port over USB.*/
 SerialUSBDriver PORTAB_SDU1;

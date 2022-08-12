@@ -19,13 +19,12 @@
 
 #include "ch.h"
 #include "hal.h"
+#include "portab.h"
 
 #include "chprintf.h"
 #include "shell.h"
 
 #include "usbcfg.h"
-
-#define PORTAB_BLINK_LED1 LINE_LED
 
 /*===========================================================================*/
 /* Command line related.                                                     */
@@ -33,49 +32,51 @@
 
 #define SHELL_WA_SIZE THD_WORKING_AREA_SIZE(2048)
 
-/* Can be measured using dd if=/dev/xxxx of=/dev/null bs=512 count=10000.*/
-static void cmd_write(BaseSequentialStream* chp, int argc, char* argv[])
-{
-    static uint8_t buf[] = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-                           "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+const static uint8_t buf1[512] = "ZXCVBNM<>?ASDFGHJK:QWRTYUIOP9876543210-ZXCVBNM<>?ASDFGHJK:QWRTY\r\n"
+                                 "ZXCVBNM<>?ASDFGHJK:QWRTYUIOP9876543210-ZXCVBNM<>?ASDFGHJK:QWRTY\r\n"
+                                 "ZXCVBNM<>?ASDFGHJK:QWRTYUIOP9876543210-ZXCVBNM<>?ASDFGHJK:QWRTY\r\n"
+                                 "ZXCVBNM<>?ASDFGHJK:QWRTYUIOP9876543210-ZXCVBNM<>?ASDFGHJK:QWRTY\r\n"
+                                 "ZXCVBNM<>?ASDFGHJK:QWRTYUIOP9876543210-ZXCVBNM<>?ASDFGHJK:QWRTY\r\n"
+                                 "ZXCVBNM<>?ASDFGHJK:QWRTYUIOP9876543210-ZXCVBNM<>?ASDFGHJK:QWRTY\r\n"
+                                 "ZXCVBNM<>?ASDFGHJK:QWRTYUIOP9876543210-ZXCVBNM<>?ASDFGHJK:QWRTY\r\n"
+                                 "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXY\r\n";
 
-    (void)argv;
-    if(argc > 0) {
-        chprintf(chp, "Usage: write\r\n");
-        return;
-    }
+const static uint8_t buf0[512] = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde\r\n"
+                                 "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde\r\n"
+                                 "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde\r\n"
+                                 "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde\r\n"
+                                 "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde\r\n"
+                                 "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde\r\n"
+                                 "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde\r\n"
+                                 "0123456789abcdef0123456789abcdef0123456789abcdef012345\r\n";
 
-    while(chnGetTimeout((BaseChannel*)chp, TIME_IMMEDIATE) == Q_TIMEOUT) {
-#if 1
-        /* Writing in channel mode.*/
-        chnWrite(&PORTAB_SDU1, buf, sizeof buf - 1);
-#else
-        /* Writing in buffer mode.*/
-        (void)obqGetEmptyBufferTimeout(&PORTAB_SDU1.obqueue, TIME_INFINITE);
-        memcpy(PORTAB_SDU1.obqueue.ptr, buf, SERIAL_USB_BUFFERS_SIZE);
-        obqPostFullBuffer(&PORTAB_SDU1.obqueue, SERIAL_USB_BUFFERS_SIZE);
-#endif
-    }
-    chprintf(chp, "\r\n\nstopped\r\n");
-}
+///* Can be measured using dd if=/dev/xxxx of=/dev/null bs=512 count=10000.*/
+// static void cmd_write(BaseSequentialStream* chp, int argc, char* argv[])
+//{
 
-static const ShellCommand commands[] = {{"write", cmd_write}, {NULL, NULL}};
+//    (void)argv;
+//    if(argc > 0) {
+//        chprintf(chp, "Usage: write\r\n");
+//        return;
+//    }
 
-static const ShellConfig shell_cfg1 = {(BaseSequentialStream*)&PORTAB_SDU1, commands};
+//    while(chnGetTimeout((BaseChannel*)chp, TIME_IMMEDIATE) == Q_TIMEOUT) {
+//#if 1
+//        /* Writing in channel mode.*/
+//        chnWrite(&PORTAB_SDU1, buf, sizeof buf - 1);
+//#else
+//        /* Writing in buffer mode.*/
+//        (void)obqGetEmptyBufferTimeout(&PORTAB_SDU1.obqueue, TIME_INFINITE);
+//        memcpy(PORTAB_SDU1.obqueue.ptr, buf, SERIAL_USB_BUFFERS_SIZE);
+//        obqPostFullBuffer(&PORTAB_SDU1.obqueue, SERIAL_USB_BUFFERS_SIZE);
+//#endif
+//    }
+//    chprintf(chp, "\r\n\nstopped\r\n");
+//}
+
+// static const ShellCommand commands[] = {{"write", cmd_write}, {NULL, NULL}};
+
+// static const ShellConfig shell_cfg1 = {(BaseSequentialStream*)&PORTAB_SDU1, commands};
 
 /*===========================================================================*/
 /* Generic code.                                                             */
@@ -91,12 +92,8 @@ static THD_FUNCTION(Thread1, arg)
     (void)arg;
     chRegSetThreadName("blinker");
     while(true) {
-        systime_t time;
-
-        time = serusbcfg.usbp->state == USB_ACTIVE ? 250 : 500;
-        palClearLine(PORTAB_BLINK_LED1);
-        chThdSleepMilliseconds(time);
-        palSetLine(PORTAB_BLINK_LED1);
+        systime_t time = serusbcfg.usbp->state == USB_ACTIVE ? 250 : 1000;
+        palToggleLine(PORTAB_BLINK_LED1);
         chThdSleepMilliseconds(time);
     }
 }
@@ -104,7 +101,7 @@ static THD_FUNCTION(Thread1, arg)
 /*
  * Application entry point.
  */
-int main(void)
+int main()
 {
 
     /*
@@ -116,7 +113,7 @@ int main(void)
      */
     halInit();
     chSysInit();
-
+    SYSCFG->CFGR1 |= SYSCFG_CFGR1_PA11_PA12_RMP;
     /*
      * Initializes a serial-over-USB CDC driver.
      */
@@ -136,7 +133,7 @@ int main(void)
     /*
      * Shell manager initialization.
      */
-    shellInit();
+    //    shellInit();
 
     /*
      * Creates the blinker thread.
@@ -146,12 +143,20 @@ int main(void)
     /*
      * Normal main() thread activity, spawning shells.
      */
+    bool i{};
     while(true) {
         if(PORTAB_SDU1.config->usbp->state == USB_ACTIVE) {
-            thread_t* shelltp =
-              chThdCreateFromHeap(NULL, SHELL_WA_SIZE, "shell", NORMALPRIO + 1, shellThread, (void*)&shell_cfg1);
-            chThdWait(shelltp); /* Waiting termination.             */
+            chnWrite((BaseSequentialStream*)&PORTAB_SDU1, buf0, 512);
+            chnWrite((BaseSequentialStream*)&PORTAB_SDU1, buf1, 512);
+            //            obqGetEmptyBufferTimeout(&PORTAB_SDU1.obqueue, TIME_INFINITE);
+            //            memcpy(PORTAB_SDU1.obqueue.ptr, i ? buf1 : buf0, SERIAL_USB_BUFFERS_SIZE);
+            //            obqPostFullBuffer(&PORTAB_SDU1.obqueue, SERIAL_USB_BUFFERS_SIZE);
+            //            thread_t* shelltp =
+            //              chThdCreateFromHeap(NULL, SHELL_WA_SIZE, "shell", NORMALPRIO + 1, shellThread,
+            //              (void*)&shell_cfg1);
+            //            chThdWait(shelltp); /* Waiting termination.             */
+            i ^= true;
         }
-        chThdSleepMilliseconds(1000);
+        chThdSleepMilliseconds(100);
     }
 }

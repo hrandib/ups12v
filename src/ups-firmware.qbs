@@ -54,8 +54,8 @@ Project {
 
             cpp.linkerFlags: [
                 "--gc-sections",
-                "--defsym=__process_stack_size__=0x100",
-                "--defsym=__main_stack_size__=0x200",
+                "--defsym=__process_stack_size__=0x400",
+                "--defsym=__main_stack_size__=0x400",
             ]
 
             cpp.positionIndependentCode: false
@@ -81,9 +81,9 @@ Project {
             Properties {
                 condition: qbs.buildVariant !== "release"
                 cpp.debugInformation: true
-                cpp.generateLinkerMapFile: true
                 cpp.optimization: "none"
             }
+            cpp.generateLinkerMapFile: true
         }
     }
 
@@ -137,8 +137,8 @@ Project {
             name: "usb"
             prefix: "usb/"
             files: [
-                "usbcfg.h",
-                "usbcfg.c"
+                "*.h",
+                "*.c"
             ]
         }
 
