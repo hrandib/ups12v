@@ -2,7 +2,10 @@
 If:
   PathMatch: "ChibiOS/*"
 CompileFlags:
-  Remove: "-W*"  
+  Add: "-W*"
 Diagnostics:
   Suppress: "*"
+
 ---
+CompileFlags:
+  Add: "-Wno-deprecated-volatile"

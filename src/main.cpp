@@ -19,7 +19,6 @@
 
 #include "ch.h"
 #include "hal.h"
-#include "portab.h"
 
 #include "chprintf.h"
 #include "shell.h"
@@ -63,12 +62,12 @@ const static uint8_t buf0[512] = "0123456789abcdef0123456789abcdef0123456789abcd
 //    while(chnGetTimeout((BaseChannel*)chp, TIME_IMMEDIATE) == Q_TIMEOUT) {
 //#if 1
 //        /* Writing in channel mode.*/
-//        chnWrite(&PORTAB_SDU1, buf, sizeof buf - 1);
+//        chnWrite(&SDU1, buf, sizeof buf - 1);
 //#else
 //        /* Writing in buffer mode.*/
-//        (void)obqGetEmptyBufferTimeout(&PORTAB_SDU1.obqueue, TIME_INFINITE);
-//        memcpy(PORTAB_SDU1.obqueue.ptr, buf, SERIAL_USB_BUFFERS_SIZE);
-//        obqPostFullBuffer(&PORTAB_SDU1.obqueue, SERIAL_USB_BUFFERS_SIZE);
+//        (void)obqGetEmptyBufferTimeout(&SDU1.obqueue, TIME_INFINITE);
+//        memcpy(SDU1.obqueue.ptr, buf, SERIAL_USB_BUFFERS_SIZE);
+//        obqPostFullBuffer(&SDU1.obqueue, SERIAL_USB_BUFFERS_SIZE);
 //#endif
 //    }
 //    chprintf(chp, "\r\n\nstopped\r\n");
@@ -76,7 +75,7 @@ const static uint8_t buf0[512] = "0123456789abcdef0123456789abcdef0123456789abcd
 
 // static const ShellCommand commands[] = {{"write", cmd_write}, {NULL, NULL}};
 
-// static const ShellConfig shell_cfg1 = {(BaseSequentialStream*)&PORTAB_SDU1, commands};
+// static const ShellConfig shell_cfg1 = {(BaseSequentialStream*)&SDU1, commands};
 
 /*===========================================================================*/
 /* Generic code.                                                             */
@@ -88,12 +87,11 @@ const static uint8_t buf0[512] = "0123456789abcdef0123456789abcdef0123456789abcd
 static THD_WORKING_AREA(waThread1, 128);
 static THD_FUNCTION(Thread1, arg)
 {
-
     (void)arg;
     chRegSetThreadName("blinker");
     while(true) {
         systime_t time = serusbcfg.usbp->state == USB_ACTIVE ? 100 : 1000;
-        palToggleLine(PORTAB_BLINK_LED1);
+        palToggleLine(LINE_LED);
         chThdSleepMilliseconds(time);
     }
 }
@@ -119,8 +117,8 @@ int main()
     /*
      * Initializes a serial-over-USB CDC driver.
      */
-    sduObjectInit(&PORTAB_SDU1);
-    sduStart(&PORTAB_SDU1, &serusbcfg);
+    sduObjectInit(&SDU1);
+    sduStart(&SDU1, &serusbcfg);
 
     /*
      * Activates the USB driver and then the USB bus pull-up on D+.
@@ -140,18 +138,18 @@ int main()
     /*
      * Creates the blinker thread.
      */
-    chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, Thread1, NULL);
+    chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, Thread1, nullptr);
 
     /*
      * Normal main() thread activity, spawning shells.
      */
     bool i{};
     while(true) {
-        if(PORTAB_SDU1.config->usbp->state == USB_ACTIVE) {
-            chnWrite((BaseSequentialStream*)&PORTAB_SDU1, i ? buf0 : buf1, 512);
-            //            obqGetEmptyBufferTimeout(&PORTAB_SDU1.obqueue, TIME_INFINITE);
-            //            memcpy(PORTAB_SDU1.obqueue.ptr, i ? buf1 : buf0, SERIAL_USB_BUFFERS_SIZE);
-            //            obqPostFullBuffer(&PORTAB_SDU1.obqueue, SERIAL_USB_BUFFERS_SIZE);
+        if(SDU1.config->usbp->state == USB_ACTIVE) {
+            chnWrite((BaseSequentialStream*)&SDU1, i ? buf0 : buf1, 512);
+            //            obqGetEmptyBufferTimeout(&SDU1.obqueue, TIME_INFINITE);
+            //            memcpy(SDU1.obqueue.ptr, i ? buf1 : buf0, SERIAL_USB_BUFFERS_SIZE);
+            //            obqPostFullBuffer(&SDU1.obqueue, SERIAL_USB_BUFFERS_SIZE);
             //            thread_t* shelltp =
             //              chThdCreateFromHeap(NULL, SHELL_WA_SIZE, "shell", NORMALPRIO + 1, shellThread,
             //              (void*)&shell_cfg1);

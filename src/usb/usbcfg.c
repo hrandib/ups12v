@@ -16,10 +16,8 @@
 
 #include "hal.h"
 
-#include "portab.h"
-
 /* Virtual serial port over USB.*/
-SerialUSBDriver PORTAB_SDU1;
+SerialUSBDriver SDU1;
 
 /*
  * Endpoints to be used for USBD1.
@@ -209,8 +207,9 @@ static const USBDescriptor *get_descriptor(USBDriver *usbp,
   case USB_DESCRIPTOR_CONFIGURATION:
     return &vcom_configuration_descriptor;
   case USB_DESCRIPTOR_STRING:
-    if (dindex < 4)
-      return &vcom_strings[dindex];
+    if (dindex < 4) {
+        return &vcom_strings[dindex];
+    }
   }
   return NULL;
 }
@@ -266,8 +265,6 @@ static const USBEndpointConfig ep2config = {
  * Handles the USB driver global events.
  */
 static void usb_event(USBDriver *usbp, usbevent_t event) {
-  extern SerialUSBDriver PORTAB_SDU1;
-
   switch (event) {
   case USB_EVENT_ADDRESS:
     return;
@@ -281,7 +278,7 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
     usbInitEndpointI(usbp, USB1_INTERRUPT_REQUEST_EP, &ep2config);
 
     /* Resetting the state of the CDC subsystem.*/
-    sduConfigureHookI(&PORTAB_SDU1);
+    sduConfigureHookI(&SDU1);
 
     chSysUnlockFromISR();
     return;
@@ -293,7 +290,7 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
     chSysLockFromISR();
 
     /* Disconnection event on suspend.*/
-    sduSuspendHookI(&PORTAB_SDU1);
+    sduSuspendHookI(&SDU1);
 
     chSysUnlockFromISR();
     return;
@@ -301,14 +298,13 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
     chSysLockFromISR();
 
     /* Connection event on wakeup.*/
-    sduWakeupHookI(&PORTAB_SDU1);
+    sduWakeupHookI(&SDU1);
 
     chSysUnlockFromISR();
     return;
   case USB_EVENT_STALLED:
     return;
   }
-  return;
 }
 
 /*
@@ -319,7 +315,7 @@ static void sof_handler(USBDriver *usbp) {
   (void)usbp;
 
   osalSysLockFromISR();
-  sduSOFHookI(&PORTAB_SDU1);
+  sduSOFHookI(&SDU1);
   osalSysUnlockFromISR();
 }
 
@@ -337,7 +333,7 @@ const USBConfig usbcfg = {
  * Serial over USB driver configuration.
  */
 const SerialUSBConfig serusbcfg = {
-  &PORTAB_USB1,
+  &USBD1,
   USB1_DATA_REQUEST_EP,
   USB1_DATA_AVAILABLE_EP,
   USB1_INTERRUPT_REQUEST_EP
