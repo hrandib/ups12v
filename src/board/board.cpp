@@ -19,8 +19,6 @@ static inline void stm32_gpio_init()
     Porta::SetConfig<getMask(GPIOA_CHRG_PWM), Gpio::OutputFast, Gpio::AltPushPull>();
     Porta::SetAltFunction<getMask(GPIOA_CHRG_PWM), Gpio::AF::_4>();
     Porta::SetConfig<getMask(GPIOA_CHRG_EN), Gpio::OutputSlow, Gpio::PushPull>();
-    // USB
-    // Porta::SetConfig<getMask(GPIOA_USB_DM, GPIOA_USB_DP), Gpio::OutputFastest, Gpio::AltPushPull>();
     // SWD function restore
     Porta::SetConfig<getMask(GPIOA_SWDIO), Gpio::OutputFast, Gpio::OutputMode(Gpio::AltPushPull | 0x01)>();
     Porta::SetConfig<getMask(GPIOA_SWCLK), Gpio::OutputFast, Gpio::OutputMode(Gpio::AltPushPull | 0x02)>();

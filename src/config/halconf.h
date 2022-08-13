@@ -33,6 +33,8 @@
 
 #include "mcuconf.h"
 
+#define SHELL_CONFIG_FILE TRUE
+
 /**
  * @brief   Enables the PAL subsystem.
  */

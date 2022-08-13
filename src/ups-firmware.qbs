@@ -69,6 +69,7 @@ Project {
                     "halconf.h",
                     "mcuconf.h",
                     "chconf.h",
+                    "shellconf.h"
                 ]
             }
 

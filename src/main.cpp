@@ -92,7 +92,7 @@ static THD_FUNCTION(Thread1, arg)
     (void)arg;
     chRegSetThreadName("blinker");
     while(true) {
-        systime_t time = serusbcfg.usbp->state == USB_ACTIVE ? 250 : 1000;
+        systime_t time = serusbcfg.usbp->state == USB_ACTIVE ? 100 : 1000;
         palToggleLine(PORTAB_BLINK_LED1);
         chThdSleepMilliseconds(time);
     }
@@ -113,7 +113,9 @@ int main()
      */
     halInit();
     chSysInit();
+    // Remap to USB pins
     SYSCFG->CFGR1 |= SYSCFG_CFGR1_PA11_PA12_RMP;
+
     /*
      * Initializes a serial-over-USB CDC driver.
      */
@@ -126,7 +128,7 @@ int main()
      * after a reset.
      */
     usbDisconnectBus(serusbcfg.usbp);
-    chThdSleepMilliseconds(1500);
+    chThdSleepSeconds(1);
     usbStart(serusbcfg.usbp, &usbcfg);
     usbConnectBus(serusbcfg.usbp);
 
@@ -146,8 +148,7 @@ int main()
     bool i{};
     while(true) {
         if(PORTAB_SDU1.config->usbp->state == USB_ACTIVE) {
-            chnWrite((BaseSequentialStream*)&PORTAB_SDU1, buf0, 512);
-            chnWrite((BaseSequentialStream*)&PORTAB_SDU1, buf1, 512);
+            chnWrite((BaseSequentialStream*)&PORTAB_SDU1, i ? buf0 : buf1, 512);
             //            obqGetEmptyBufferTimeout(&PORTAB_SDU1.obqueue, TIME_INFINITE);
             //            memcpy(PORTAB_SDU1.obqueue.ptr, i ? buf1 : buf0, SERIAL_USB_BUFFERS_SIZE);
             //            obqPostFullBuffer(&PORTAB_SDU1.obqueue, SERIAL_USB_BUFFERS_SIZE);
@@ -157,6 +158,6 @@ int main()
             //            chThdWait(shelltp); /* Waiting termination.             */
             i ^= true;
         }
-        chThdSleepMilliseconds(100);
+        chThdSleepMilliseconds(1000);
     }
 }
