@@ -34,7 +34,6 @@ Project {
             cpp.cxxFlags: [
                 "-Wno-register",
                 "-Wno-volatile",
-                "-Wno-deprecated-volatile"
             ]
 
             cpp.cLanguageVersion: "gnu11"
@@ -119,7 +118,7 @@ Project {
         }
 
         Group {
-            name: "Utility"
+            name: "utility"
             prefix: "utility/"
             files: [
                 "*.h",
@@ -155,6 +154,8 @@ Project {
         }
 
         files: [
+            "adc_handler.cpp",
+            "adc_handler.h",
             "main.cpp",
         ]
 
