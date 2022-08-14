@@ -29,6 +29,7 @@
 #define GPIOA_ADC0 0U
 #define GPIOA_ADC1 1U
 #define GPIOA_ADC2 2U
+#define GPIOA_ADC3 3U
 #define GPIOA_CHRG_EN 4U
 #define GPIOA_SCL 5U
 #define GPIOA_SDA 6U

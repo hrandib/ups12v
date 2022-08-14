@@ -25,8 +25,8 @@
 #include "ch.h"
 #include "hal.h"
 
-#define ADC_GRP_NUM_CHANNELS 3
-#define ADC_GRP_BUF_DEPTH 16
+#define ADC_GRP_NUM_CHANNELS 5
+#define ADC_GRP_BUF_DEPTH 8
 
 static adcsample_t samples[ADC_GRP_NUM_CHANNELS * ADC_GRP_BUF_DEPTH];
 
@@ -52,7 +52,7 @@ static void adcerrorcallback(ADCDriver* adcp, adcerror_t err)
 
 /*
  * ADC conversion group.
- * Mode:        Linear buffer, 8 samples of 1 channel, SW triggered.
+ * Mode:        Linear buffer, 16 samples of 4 channel, SW triggered.
  * Channels:    IN10.
  */
 static const ADCConversionGroup adcgrpcfg = {
@@ -60,10 +60,10 @@ static const ADCConversionGroup adcgrpcfg = {
   ADC_GRP_NUM_CHANNELS,
   NULL,
   adcerrorcallback,
-  ADC_CFGR1_CONT | ADC_CFGR1_RES_12BIT, /* CFGR1 */
-  ADC_TR(0, 0),                         /* TR */
-  ADC_SMPR_SMP_239P5,                   /* SMPR */
-  ADC_CHSELR_CHSEL10                    /* CHSELR */
+  ADC_CFGR1_CONT | ADC_CFGR1_RES_12BIT,                                                              /* CFGR1 */
+  ADC_TR(0, 0),                                                                                      /* TR */
+  ADC_SMPR_SMP_239P5,                                                                                /* SMPR */
+  ADC_CHSELR_CHSEL0 | ADC_CHSELR_CHSEL1 | ADC_CHSELR_CHSEL2 | ADC_CHSELR_CHSEL3 | ADC_CHSELR_CHSEL17 /* CHSELR */
 };
 
 void runAdc()
@@ -72,7 +72,7 @@ void runAdc()
      * Activates the ADC1 driver and the temperature sensor.
      */
     adcStart(&ADCD1, NULL);
-    adcSTM32SetCCR(ADC_CCR_TSEN | ADC_CCR_VREFEN);
+    adcSTM32SetCCR(ADC_CCR_VREFEN);
 
     /*
      * Linear conversion.
@@ -84,15 +84,4 @@ void runAdc()
      * Starts an ADC continuous conversion.
      */
     adcStartConversion(&ADCD1, &adcgrpcfg, samples, ADC_GRP_BUF_DEPTH);
-
-    /*
-     * Normal main() thread activity, in this demo it does nothing.
-     */
-    //    while(true) {
-    //        if(palReadPad(GPIOA, GPIOA_BUTTON)) {
-    //            adcStopConversion(&ADCD1);
-    //            adcSTM32SetCCR(0);
-    //        }
-    //        chThdSleepMilliseconds(500);
-    //    }
 }

@@ -32,28 +32,33 @@
 using namespace std::literals;
 
 static THD_WORKING_AREA(SHELL_WA_SIZE, 512);
-static void cmd_dummy(BaseSequentialStream* chp, int argc, char* argv[]);
-// static void cmd_setdigital(BaseSequentialStream* chp, int argc, char* argv[]);
-// static void cmd_getdigital(BaseSequentialStream* chp, int argc, char* argv[]);
-// static void cmd_getcounters(BaseSequentialStream* chp, int argc, char* argv[]);
-// static void cmd_uptime(BaseSequentialStream* chp, int argc, char* argv[]);
-// static void cmd_setmbid(BaseSequentialStream* chp, int argc, char* argv[]);
+static void cmd_poll(BaseSequentialStream* chp, int argc, char* argv[]);
+static void cmd_cutoff(BaseSequentialStream* chp, int argc, char* argv[]);
 
-static const ShellCommand commands[] = {{"dummy", cmd_dummy},
-                                        //   {"setdigital", cmd_setdigital},
-                                        //   {"getdigital", cmd_getdigital},
-                                        //   {"getcounters", cmd_getcounters},
-                                        //   {"uptime", cmd_uptime},
-                                        //   {"setmbid", cmd_setmbid},
-                                        {nullptr, nullptr}};
-
+static const ShellCommand commands[] = {{"poll", cmd_poll}, {"cutoff", cmd_cutoff}, {nullptr, nullptr}};
 static char histbuf[128];
-
 static const ShellConfig shell_cfg = {(BaseSequentialStream*)&SDU1, commands, histbuf, 128};
 
-void cmd_dummy(BaseSequentialStream* chp, int /*argc*/, char* /*argv*/[])
+// Continuously report: main(Output/Input), Bat1, Bat2, USB VBUS voltages in mV
+void cmd_poll(BaseSequentialStream* chp, int /*argc*/, char* /*argv*/[])
 {
-    chprintf(chp, "DUMMY");
+    auto* asyncCh = (BaseAsynchronousChannel*)chp;
+    while(chnGetTimeout(asyncCh, TIME_IMMEDIATE) == MSG_TIMEOUT) {
+        chprintf(chp, "DUMMY\r\n");
+        chThdSleepSeconds(1);
+    }
+}
+
+// Set charge cut-off voltage or percentage
+// Set cut-off voltage if input value in the range 3500-4200
+// or max charge percentage if input value <= 100
+void cmd_cutoff(BaseSequentialStream* chp, int argc, char* argv[])
+{
+    auto* asyncCh = (BaseAsynchronousChannel*)chp;
+    while(chnGetTimeout(asyncCh, TIME_IMMEDIATE) == MSG_TIMEOUT) {
+        chprintf(chp, "DUMMY\r\n");
+        chThdSleepSeconds(1);
+    }
 }
 
 // void cmd_getdigital(BaseSequentialStream* chp, int argc, char** /*argv*/)

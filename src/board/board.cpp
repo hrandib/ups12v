@@ -13,7 +13,7 @@ static inline void stm32_gpio_init()
     using namespace Mcucpp;
     Gpio::EnablePorts<Porta, Portb>();
     // GPIOA
-    Porta::WriteConfig<getMask(GPIOA_ADC0, GPIOA_ADC1, GPIOA_ADC2), Gpio::Input, Gpio::Analog>();
+    Porta::WriteConfig<getMask(GPIOA_ADC0, GPIOA_ADC1, GPIOA_ADC2, GPIOA_ADC3), Gpio::Input, Gpio::Analog>();
     Porta::SetConfig<getMask(GPIOA_SCL, GPIOA_SDA), Gpio::OutputFast, Gpio::OpenDrainPullUp>();
     // TIM14 CH1 PWM
     Porta::SetConfig<getMask(GPIOA_CHRG_PWM), Gpio::OutputFast, Gpio::AltPushPull>();

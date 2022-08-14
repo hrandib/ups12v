@@ -28,7 +28,6 @@
 #include "chprintf.h"
 #include "ch_extended.h"
 #include "type_traits_ex.h"
-#include "circularfifo.h"
 
 // clang-format on
 
@@ -36,7 +35,6 @@
 #include <numeric>
 
 namespace Analog {
-using namespace Mcudrv;
 
 template<typename T, size_t size>
 class MovingAverageBuf
@@ -63,60 +61,8 @@ public:
 
 class AdcHandler : Rtos::BaseStaticThread<128>
 {
-public:
-    static constexpr size_t INPUT_CH_NUMBER = 3;
-    static constexpr size_t numChannels = INPUT_CH_NUMBER;
-    static constexpr size_t dmaBufDepth = 2;
-private:
-    using sample_buf_t = std::array<adcsample_t, numChannels>;
-    using dma_buf_t = std::array<sample_buf_t, dmaBufDepth>;
-    using fifo_t = memory_relaxed_acquire_release::CircularFifo<sample_buf_t, 128>;
-    using counters_buf_t = std::array<uint32_t, numChannels>;
-    using InputPins = InputPinsSequence;
-
-    dma_buf_t dmaBuf_;
-    fifo_t fifo_;
-    std::array<MovingAverageBuf<adcsample_t, 8>, numChannels> maBuf_;
-    ADCDriver& AdcDriver_;
-    Rtos::BinarySemaphore semSamples_, semCounters_, semBinaryVal_;
-    sample_buf_t samples_;
-    counters_buf_t counters_;
-    uint16_t binaryVal_;
-    static const ADCConversionGroup adcGroupCfg_;
-public:
-    Input() :
-      fifo_{}, maBuf_{}, AdcDriver_{ADCD1}, semSamples_{false}, semCounters_{false},
-      semBinaryVal_{false}, samples_{}, counters_{}, binaryVal_{}
-    {
-        AdcDriver_.customData = this;
-    }
-    void Init();
-    static void AdcCb(ADCDriver* adcp, adcsample_t* buffer, size_t);
-    sample_buf_t GetSamples();
-    uint16_t GetBinaryVal();
-    counters_buf_t GetCounters();
     void main() override;
 };
-
-inline Input::sample_buf_t Input::GetSamples()
-{
-    Rtos::SemLockGuard{semSamples_};
-    return samples_;
-}
-
-inline uint16_t Input::GetBinaryVal()
-{
-    Rtos::SemLockGuard{semBinaryVal_};
-    return binaryVal_;
-}
-
-inline Input::counters_buf_t Input::GetCounters()
-{
-    Rtos::SemLockGuard{semCounters_};
-    return counters_;
-}
-
-extern Input input;
 
 } // Analog
 
