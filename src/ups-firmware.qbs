@@ -99,7 +99,8 @@ Project {
         cpp.executableSuffix: ".elf"
 
         cpp.includePaths: [
-            project.CH_PATH + "/os/various/shell/"
+            project.CH_PATH + "/os/various/shell/",
+            project.CH_PATH + "/os/various/cpp_wrappers/"
         ]
 
         Group {
@@ -153,9 +154,20 @@ Project {
             ]
         }
 
+        Group {
+            name: "cpp wrappers"
+            prefix: project.CH_PATH + "/os/various/cpp_wrappers/"
+            files: [
+                "ch.hpp",
+                "ch.cpp",
+            ]
+        }
+
         files: [
             "adc_handler.cpp",
             "adc_handler.h",
+            "shell_handler.cpp",
+            "shell_handler.h",
             "main.cpp",
         ]
 
