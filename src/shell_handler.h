@@ -22,14 +22,10 @@
 #ifndef SHELL_IMPL_H
 #define SHELL_IMPL_H
 
-#include <atomic>
-
-// extern std::atomic_uint32_t uptimeCounter;
-
-// class Shell
-//{
-// public:
-//   Shell();
-// };
+class Shell
+{
+public:
+    Shell();
+};
 
 #endif // SHELL_IMPL_H

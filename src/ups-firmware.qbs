@@ -53,8 +53,8 @@ Project {
 
             cpp.linkerFlags: [
                 "--gc-sections",
-                "--defsym=__process_stack_size__=0x400",
-                "--defsym=__main_stack_size__=0x400",
+                "--defsym=__process_stack_size__=0x100",
+                "--defsym=__main_stack_size__=0x100",
             ]
 
             cpp.positionIndependentCode: false
