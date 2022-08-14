@@ -138,7 +138,7 @@ Project {
             prefix: "usb/"
             files: [
                 "*.h",
-                "*.c"
+                "*.cpp"
             ]
         }
 
