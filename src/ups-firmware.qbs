@@ -123,6 +123,7 @@ Project {
             prefix: "utility/"
             files: [
                 "*.h",
+                "*.cpp"
             ]
         }
 

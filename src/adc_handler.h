@@ -32,6 +32,7 @@
 // clang-format on
 
 #include <array>
+#include <atomic>
 #include <numeric>
 
 namespace Analog {
@@ -63,6 +64,8 @@ class AdcHandler : Rtos::BaseStaticThread<128>
 {
     void main() override;
 };
+
+extern std::atomic_uint16_t cutoff_voltage;
 
 } // Analog
 

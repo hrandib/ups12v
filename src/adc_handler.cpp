@@ -28,6 +28,9 @@
 #define ADC_GRP_NUM_CHANNELS 5
 #define ADC_GRP_BUF_DEPTH 8
 
+// 85% battery charge by default;
+std::atomic_uint16_t Analog::cutoff_voltage = 4100;
+
 static adcsample_t samples[ADC_GRP_NUM_CHANNELS * ADC_GRP_BUF_DEPTH];
 
 /*
