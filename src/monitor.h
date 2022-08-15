@@ -33,9 +33,11 @@ using std::atomic_uint16_t;
 using adc_data_t = std::atomic_uint16_t[AdcChNumber];
 
 // 85% battery charge by default;
-extern atomic_uint16_t cutoff_voltage;
+extern atomic_uint16_t chargeCutoff;
+// 55% battery charge by default
+extern std::atomic_uint16_t idleDischargeCutoff;
 
-enum class State : uint16_t { Idle, Discharging, Charging };
+enum class State : uint16_t { Idle, Trickle, Discharge, Charge };
 extern std::atomic<State> state;
 extern adc_data_t voltages;
 

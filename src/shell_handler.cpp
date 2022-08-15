@@ -27,15 +27,18 @@
 // clang-format on
 
 #include "shell_handler.h"
-#include "adc_handler.h"
 #include "monitor.h"
 #include "usbcfg.h"
 #include <cstdlib>
 
 static void cmd_poll(BaseSequentialStream* chp, int argc, char* argv[]);
-static void cmd_cutoff(BaseSequentialStream* chp, int argc, char* argv[]);
+static void cmd_cutoff_charge(BaseSequentialStream* chp, int argc, char* argv[]);
+static void cmd_cutoff_discharge(BaseSequentialStream* chp, int argc, char* argv[]);
 
-static const ShellCommand commands[] = {{"poll", cmd_poll}, {"cutoff", cmd_cutoff}, {nullptr, nullptr}};
+static const ShellCommand commands[] = {{"poll", cmd_poll},
+                                        {"limit-charge", cmd_cutoff_charge},
+                                        {"limit-discharge", cmd_cutoff_discharge},
+                                        {nullptr, nullptr}};
 static char histbuf[128];
 static const ShellConfig shell_cfg = {(BaseSequentialStream*)&SDU1, commands, histbuf, 128};
 
@@ -62,7 +65,7 @@ static inline uint32_t convertPercents2Voltage(uint32_t val)
     return lut[(val - 50) / 5];
 }
 
-void cmd_cutoff(BaseSequentialStream* chp, int argc, char* argv[])
+static void cutoff(const char* what, std::atomic_uint16_t& cutoffVal, BaseSequentialStream* chp, int argc, char* argv[])
 {
     do {
         if(argc == 1) {
@@ -75,14 +78,25 @@ void cmd_cutoff(BaseSequentialStream* chp, int argc, char* argv[])
                 break;
             }
             chprintf(chp, "%u mV\r\n", val);
-            monitor::cutoff_voltage = val;
+            cutoffVal = val;
             return;
         }
     } while(false);
+    chprintf(chp, "Limits %s level\r\n", what);
     shellUsage(chp,
-               "Set charge cut-off voltage or percentage.\r\n"
+               "Set cut-off voltage or percentage.\r\n"
                "  Set cut-off voltage if input value in the range 3500-4200\r\n"
                "  or max charge percentage if input value in the range 50-100\r\n");
+}
+
+static void cmd_cutoff_charge(BaseSequentialStream* chp, int argc, char* argv[])
+{
+    cutoff("charge", monitor::chargeCutoff, chp, argc, argv);
+}
+
+static void cmd_cutoff_discharge(BaseSequentialStream* chp, int argc, char* argv[])
+{
+    cutoff("idle discharge", monitor::idleDischargeCutoff, chp, argc, argv);
 }
 
 static THD_WORKING_AREA(SHELL_WA_SIZE, 512);
