@@ -28,13 +28,10 @@
 
 #include "shell_handler.h"
 #include "adc_handler.h"
-#include "string_utils.h"
+#include "monitor.h"
 #include "usbcfg.h"
 #include <cstdlib>
 
-using namespace std::literals;
-
-static THD_WORKING_AREA(SHELL_WA_SIZE, 512);
 static void cmd_poll(BaseSequentialStream* chp, int argc, char* argv[]);
 static void cmd_cutoff(BaseSequentialStream* chp, int argc, char* argv[]);
 
@@ -45,9 +42,15 @@ static const ShellConfig shell_cfg = {(BaseSequentialStream*)&SDU1, commands, hi
 // Continuously report: main(Output/Input), Bat1, Bat2, USB VBUS voltages in mV
 void cmd_poll(BaseSequentialStream* chp, int /*argc*/, char* /*argv*/[])
 {
+    using namespace monitor;
     auto* asyncCh = (BaseAsynchronousChannel*)chp;
     while(chnGetTimeout(asyncCh, TIME_IMMEDIATE) == MSG_TIMEOUT) {
-        chprintf(chp, "DUMMY\r\n");
+        chprintf(chp,
+                 "%u  %u  %u  %u\r\n",
+                 (uint16_t)voltages[0],
+                 (uint16_t)voltages[1],
+                 (uint16_t)voltages[2],
+                 (uint16_t)voltages[3]);
         chThdSleepSeconds(1);
     }
 }
@@ -63,7 +66,7 @@ void cmd_cutoff(BaseSequentialStream* chp, int argc, char* argv[])
 {
     do {
         if(argc == 1) {
-            auto val = atoi(argv[0]);
+            uint32_t val = atoi(argv[0]);
             if(50 <= val && val <= 100) {
                 val = convertPercents2Voltage(val);
             }
@@ -72,7 +75,7 @@ void cmd_cutoff(BaseSequentialStream* chp, int argc, char* argv[])
                 break;
             }
             chprintf(chp, "%u mV\r\n", val);
-            Analog::cutoff_voltage = val;
+            monitor::cutoff_voltage = val;
             return;
         }
     } while(false);
@@ -82,7 +85,8 @@ void cmd_cutoff(BaseSequentialStream* chp, int argc, char* argv[])
                "  or max charge percentage if input value in the range 50-100\r\n");
 }
 
-Shell::Shell()
+static THD_WORKING_AREA(SHELL_WA_SIZE, 512);
+void shellRun()
 {
     shellInit();
     auto* thd = chThdCreateStatic(SHELL_WA_SIZE, sizeof(SHELL_WA_SIZE), NORMALPRIO, shellThread, (void*)&shell_cfg);

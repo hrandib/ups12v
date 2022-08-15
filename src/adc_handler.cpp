@@ -21,31 +21,18 @@
  */
 
 #include "adc_handler.h"
-
 #include "ch.h"
 #include "hal.h"
+#include <array>
+#include <numeric>
 
-#define ADC_GRP_NUM_CHANNELS 5
-#define ADC_GRP_BUF_DEPTH 8
+#define ADC_GRP_BUF_DEPTH 16
+#define ADC_GRP_CHANNELS 5
+#define ADC_VREF_CHANNEL 4
 
-// 85% battery charge by default;
-std::atomic_uint16_t Analog::cutoff_voltage = 4100;
+using buf_t = adcsample_t[ADC_GRP_BUF_DEPTH][ADC_GRP_CHANNELS];
 
-static adcsample_t samples[ADC_GRP_NUM_CHANNELS * ADC_GRP_BUF_DEPTH];
-
-/*
- * ADC streaming callback.
- */
-static size_t nx, ny = 0;
-static void adccallback(ADCDriver* adcp)
-{
-    if(adcIsBufferComplete(adcp)) {
-        nx += 1;
-    }
-    else {
-        ny += 1;
-    }
-}
+static buf_t samples;
 
 static void adcerrorcallback(ADCDriver* adcp, adcerror_t err)
 {
@@ -53,38 +40,57 @@ static void adcerrorcallback(ADCDriver* adcp, adcerror_t err)
     (void)err;
 }
 
-/*
- * ADC conversion group.
- * Mode:        Linear buffer, 16 samples of 4 channel, SW triggered.
- * Channels:    IN10.
- */
 static const ADCConversionGroup adcgrpcfg = {
   FALSE,
-  ADC_GRP_NUM_CHANNELS,
-  NULL,
+  ADC_GRP_CHANNELS,
+  nullptr,
   adcerrorcallback,
   ADC_CFGR1_CONT | ADC_CFGR1_RES_12BIT,                                                              /* CFGR1 */
   ADC_TR(0, 0),                                                                                      /* TR */
-  ADC_SMPR_SMP_239P5,                                                                                /* SMPR */
+  ADC_SMPR_SMP_71P5,                                                                                 /* SMPR */
   ADC_CHSELR_CHSEL0 | ADC_CHSELR_CHSEL1 | ADC_CHSELR_CHSEL2 | ADC_CHSELR_CHSEL3 | ADC_CHSELR_CHSEL17 /* CHSELR */
 };
 
-void runAdc()
+void initAdc()
 {
-    /*
-     * Activates the ADC1 driver and the temperature sensor.
-     */
-    adcStart(&ADCD1, NULL);
+    adcStart(&ADCD1, nullptr);
     adcSTM32SetCCR(ADC_CCR_VREFEN);
+}
 
-    /*
-     * Linear conversion.
-     */
-    //    adcConvert(&ADCD1, &adcgrpcfg1, samples, ADC_GRP1_BUF_DEPTH);
-    //    chThdSleepMilliseconds(1000);
+static uint16_t sum(const adcsample_t* samples)
+{
+    using namespace std;
+    uint16_t result{};
+    for(size_t i{}; i < ADC_GRP_BUF_DEPTH; ++i) {
+        result += *(samples + (i * ADC_GRP_CHANNELS));
+    }
+    return result;
+}
 
-    /*
-     * Starts an ADC continuous conversion.
-     */
-    adcStartConversion(&ADCD1, &adcgrpcfg, samples, ADC_GRP_BUF_DEPTH);
+static inline uint16_t getVdda(uint16_t vref)
+{
+    static const uint16_t& VREFINT_CAL = *(const uint16_t*)0x1FFFF7BA;
+    const auto VDDA = (3300U * (VREFINT_CAL - 8) * ADC_GRP_BUF_DEPTH) / vref;
+    return VDDA;
+}
+
+constexpr uint32_t CAL_DATA[monitor::AdcChNumber] = {1, 1, 1, 1};
+constexpr uint32_t FULL_SCALE = 4095U;
+
+msg_t getVoltages(monitor::adc_data_t& voltages)
+{
+    using namespace monitor;
+    msg_t result = adcConvert(&ADCD1, &adcgrpcfg, (adcsample_t*)samples, ADC_GRP_BUF_DEPTH);
+    uint32_t avgBuf[ADC_GRP_CHANNELS];
+    if(result == MSG_OK) {
+        for(size_t i{}; i < ADC_GRP_CHANNELS; ++i) {
+            avgBuf[i] = sum(&samples[0][i]);
+        }
+        uint32_t vdda = getVdda(avgBuf[ADC_VREF_CHANNEL]);
+        for(size_t i{}; i < monitor::AdcChNumber; ++i) {
+            uint16_t val = (avgBuf[i] * vdda) * CAL_DATA[i] / (FULL_SCALE * ADC_GRP_BUF_DEPTH);
+            voltages[i] = val;
+        }
+    }
+    return result;
 }

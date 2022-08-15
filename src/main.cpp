@@ -20,7 +20,9 @@
  * SOFTWARE.
  */
 
+#include "adc_handler.h"
 #include "hal.h"
+#include "monitor.h"
 #include "shell_handler.h"
 #include "usbcfg.h"
 
@@ -57,7 +59,9 @@ int main()
     usbStart(serusbcfg.usbp, &usbcfg);
     usbConnectBus(serusbcfg.usbp);
 
-    Shell sh;
+    initAdc();
+    monitor::run();
+    shellRun();
     /*
      * Normal main() thread activity, spawning shells.
      */

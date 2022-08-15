@@ -22,10 +22,6 @@
 #ifndef SHELL_IMPL_H
 #define SHELL_IMPL_H
 
-class Shell
-{
-public:
-    Shell();
-};
+void shellRun();
 
 #endif // SHELL_IMPL_H

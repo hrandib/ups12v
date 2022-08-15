@@ -19,13 +19,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef ADC_HANDLER_H
-#define ADC_HANDLER_H
 
-#include "monitor.h"
-#include "osal.h"
+#ifndef MONITOR_H
+#define MONITOR_H
 
-void initAdc();
-extern msg_t getVoltages(monitor::adc_data_t& voltages);
+#include <atomic>
 
-#endif // ADC_HANDLER_H
+namespace monitor {
+
+enum AdcChannels { AdcVbus, AdcMain, AdcBat1, AdcBat2, AdcChNumber };
+
+using std::atomic_uint16_t;
+using adc_data_t = std::atomic_uint16_t[AdcChNumber];
+
+// 85% battery charge by default;
+extern atomic_uint16_t cutoff_voltage;
+
+enum class State : uint16_t { Idle, Discharging, Charging };
+extern std::atomic<State> state;
+extern adc_data_t voltages;
+
+void run();
+
+} // data
+
+#endif // MONITOR_H

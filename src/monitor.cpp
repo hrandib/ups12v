@@ -19,13 +19,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef ADC_HANDLER_H
-#define ADC_HANDLER_H
 
 #include "monitor.h"
-#include "osal.h"
+#include "ch.h"
 
-void initAdc();
 extern msg_t getVoltages(monitor::adc_data_t& voltages);
 
-#endif // ADC_HANDLER_H
+namespace monitor {
+
+// 85% battery charge by default
+std::atomic_uint16_t cutoff_voltage = 4100;
+
+std::atomic<State> state;
+adc_data_t voltages;
+
+static THD_WORKING_AREA(SHELL_WA_SIZE, 128);
+THD_FUNCTION(monitorThread, )
+{
+    while(true) {
+        getVoltages(voltages);
+        chThdSleepMilliseconds(200);
+    }
+}
+
+void run()
+{
+    auto* thd = chThdCreateStatic(SHELL_WA_SIZE, sizeof(SHELL_WA_SIZE), NORMALPRIO + 1, monitorThread, nullptr);
+    chRegSetThreadNameX(thd, "Monitor");
+}
+
+} // data

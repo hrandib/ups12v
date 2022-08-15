@@ -167,6 +167,8 @@ Project {
         files: [
             "adc_handler.cpp",
             "adc_handler.h",
+            "monitor.cpp",
+            "monitor.h",
             "shell_handler.cpp",
             "shell_handler.h",
             "main.cpp",
