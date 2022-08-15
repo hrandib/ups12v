@@ -30,12 +30,12 @@ namespace monitor {
 enum AdcChannels { AdcVbus, AdcMain, AdcBat1, AdcBat2, AdcChNumber };
 
 using std::atomic_uint16_t;
-using adc_data_t = std::atomic_uint16_t[AdcChNumber];
+using adc_data_t = atomic_uint16_t[AdcChNumber];
 
 // 85% battery charge by default;
 extern atomic_uint16_t chargeCutoff;
 // 55% battery charge by default
-extern std::atomic_uint16_t idleDischargeCutoff;
+extern atomic_uint16_t idleDischargeCutoff;
 
 enum class State : uint16_t { Idle, Trickle, Discharge, Charge };
 extern std::atomic<State> state;

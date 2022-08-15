@@ -28,9 +28,9 @@ extern msg_t getVoltages(monitor::adc_data_t& voltages);
 namespace monitor {
 
 // 85% battery charge by default
-std::atomic_uint16_t chargeCutoff = 4100;
+atomic_uint16_t chargeCutoff = 4100;
 // 55% battery charge by default
-std::atomic_uint16_t idleDischargeCutoff = 3850;
+atomic_uint16_t idleDischargeCutoff = 3850;
 
 std::atomic<State> state;
 adc_data_t voltages;
@@ -40,7 +40,7 @@ THD_FUNCTION(monitorThread, )
 {
     while(true) {
         getVoltages(voltages);
-        chThdSleepMilliseconds(100);
+        chThdSleepMilliseconds(200);
     }
 }
 
