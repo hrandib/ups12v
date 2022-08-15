@@ -39,6 +39,8 @@ extern atomic_uint16_t idleDischargeCutoff;
 
 enum class State : uint16_t { Idle, Trickle, Discharge, Charge };
 extern std::atomic<State> state;
+extern const char* stateString[];
+
 extern adc_data_t voltages;
 
 void run();

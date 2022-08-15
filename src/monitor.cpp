@@ -22,24 +22,49 @@
 
 #include "monitor.h"
 #include "ch.h"
+#include "hal.h"
 
 extern msg_t getVoltages(monitor::adc_data_t& voltages);
 
 namespace monitor {
 
 // 85% battery charge by default
-atomic_uint16_t chargeCutoff = 4100;
+atomic_uint16_t chargeCutoff = 4100U;
 // 55% battery charge by default
-atomic_uint16_t idleDischargeCutoff = 3850;
+atomic_uint16_t idleDischargeCutoff = 3850U;
 
 std::atomic<State> state;
 adc_data_t voltages;
 
+const char* stateString[] = {"Idle", "Trickle", "Discharge", "Charge"};
+
+constexpr uint16_t SWITCH_12V_THRESHOLD = 11900U;
+constexpr uint16_t TRICKLE_HYST = 100U;
+
 static THD_WORKING_AREA(SHELL_WA_SIZE, 128);
 THD_FUNCTION(monitorThread, )
 {
+    using enum AdcChannels;
     while(true) {
         getVoltages(voltages);
+        uint16_t batVoltage = voltages[AdcBat1] + voltages[AdcBat1];
+        if(voltages[AdcMain] < SWITCH_12V_THRESHOLD) {
+            state = State::Discharge;
+            palClearLine(LINE_CHRG_EN);
+        }
+        else if(batVoltage < idleDischargeCutoff) {
+            state = State::Charge;
+            palSetLine(LINE_CHRG_EN);
+        }
+        else if(batVoltage > chargeCutoff) {
+            state = State::Idle;
+            palClearLine(LINE_CHRG_EN);
+            palClearLine(LINE_TRICKLE_EN);
+        }
+        else if(batVoltage < (chargeCutoff - TRICKLE_HYST)) {
+            state = State::Trickle;
+            palSetLine(LINE_TRICKLE_EN);
+        }
         chThdSleepMilliseconds(200);
     }
 }
