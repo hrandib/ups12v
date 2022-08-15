@@ -43,18 +43,23 @@ static char histbuf[128];
 static const ShellConfig shell_cfg = {(BaseSequentialStream*)&SDU1, commands, histbuf, 128};
 
 // Continuously report: main(Output/Input), Bat1, Bat2, USB VBUS voltages in mV
-void cmd_poll(BaseSequentialStream* chp, int /*argc*/, char* /*argv*/[])
+void cmd_poll(BaseSequentialStream* chp, int argc, char* /*argv*/[])
 {
-    using namespace monitor;
-    auto* asyncCh = (BaseAsynchronousChannel*)chp;
-    while(chnGetTimeout(asyncCh, TIME_IMMEDIATE) == MSG_TIMEOUT) {
-        chprintf(chp,
-                 "%u  %u  %u  %u\r\n",
-                 (uint16_t)voltages[0],
-                 (uint16_t)voltages[1],
-                 (uint16_t)voltages[2],
-                 (uint16_t)voltages[3]);
-        chThdSleepSeconds(1);
+    if(!argc) {
+        using namespace monitor;
+        auto* asyncCh = (BaseAsynchronousChannel*)chp;
+        while(chnGetTimeout(asyncCh, TIME_IMMEDIATE) == MSG_TIMEOUT) {
+            chprintf(chp,
+                     "%u  %u  %u  %u\r\n",
+                     (uint16_t)voltages[0],
+                     (uint16_t)voltages[1],
+                     (uint16_t)voltages[2],
+                     (uint16_t)voltages[3]);
+            chThdSleepSeconds(1);
+        }
+    }
+    else {
+        shellUsage(chp, "Continuously reports Main(Output/Input), BAT1, BAT2, USB_VBUS voltages in mV");
     }
 }
 
