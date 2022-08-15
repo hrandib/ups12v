@@ -47,7 +47,7 @@ THD_FUNCTION(monitorThread, )
     using enum AdcChannels;
     while(true) {
         getVoltages(voltages);
-        uint16_t batVoltage = voltages[AdcBat1] + voltages[AdcBat1];
+        uint16_t batVoltage = voltages[AdcVBat];
         if(voltages[AdcMain] < SWITCH_12V_THRESHOLD) {
             state = State::Discharge;
             palClearLine(LINE_CHRG_EN);

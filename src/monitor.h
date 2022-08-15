@@ -27,7 +27,8 @@
 
 namespace monitor {
 
-enum AdcChannels { AdcVbus, AdcMain, AdcBat1, AdcBat2, AdcChNumber };
+// AdcBat1 is a single element of 2S battery connected to GND
+enum AdcChannels { AdcVbus, AdcMain, AdcVBat, AdcBat1, AdcChNumber };
 
 using std::atomic_uint16_t;
 using adc_data_t = atomic_uint16_t[AdcChNumber];
@@ -40,6 +41,10 @@ extern atomic_uint16_t idleDischargeCutoff;
 enum class State : uint16_t { Idle, Trickle, Discharge, Charge };
 extern std::atomic<State> state;
 extern const char* stateString[];
+static inline const char* toString(decltype(state)& state)
+{
+    return stateString[(uint16_t)state.load(std::memory_order_relaxed)];
+}
 
 extern adc_data_t voltages;
 
