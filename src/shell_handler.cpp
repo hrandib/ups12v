@@ -32,10 +32,12 @@
 #include <cstdlib>
 
 static void cmd_poll(BaseSequentialStream* chp, int argc, char* argv[]);
+static void cmd_poll_aux(BaseSequentialStream* chp, int argc, char* argv[]);
 static void cmd_cutoff_charge(BaseSequentialStream* chp, int argc, char* argv[]);
 static void cmd_cutoff_discharge(BaseSequentialStream* chp, int argc, char* argv[]);
 
 static const ShellCommand commands[] = {{"poll", cmd_poll},
+                                        {"poll-aux", cmd_poll_aux},
                                         {"limit-charge", cmd_cutoff_charge},
                                         {"limit-discharge", cmd_cutoff_discharge},
                                         {nullptr, nullptr}};
@@ -55,6 +57,26 @@ void cmd_poll(BaseSequentialStream* chp, int argc, char* /*argv*/[])
     }
     else {
         shellUsage(chp, "Continuously reports Main(Output/Input), VBAT voltages in mV and the current state");
+    }
+}
+
+void cmd_poll_aux(BaseSequentialStream* chp, int argc, char* /*argv*/[])
+{
+    if(!argc) {
+        using namespace monitor;
+        auto* asyncCh = (BaseAsynchronousChannel*)chp;
+        while(chnGetTimeout(asyncCh, TIME_IMMEDIATE) == MSG_TIMEOUT) {
+            chprintf(chp,
+                     "%u  %u  %u  %s\r\n",
+                     (uint16_t)voltages[AdcVBat],
+                     (uint16_t)voltages[AdcBat1],
+                     (uint16_t)voltages[AdcVbus],
+                     toString(state));
+            chThdSleepSeconds(1);
+        }
+    }
+    else {
+        shellUsage(chp, "Continuously reports VBAT, BAT1, USB VBUS voltages in mV and the current state");
     }
 }
 
