@@ -23,8 +23,7 @@
 #include "adc_handler.h"
 #include "ch.h"
 #include "hal.h"
-#include <array>
-#include <numeric>
+#include <tuple>
 
 #define ADC_GRP_BUF_DEPTH 16
 #define ADC_GRP_CHANNELS 5
@@ -74,7 +73,12 @@ static inline uint16_t getVdda(uint16_t vref)
     return VDDA;
 }
 
-constexpr uint32_t CAL_DATA[monitor::AdcChNumber] = {1, 1, 1, 1};
+// Numerator/Denominator pairs
+// Evalutated denominator should be additionally multiplied by the buf depth
+constexpr std::pair<uint16_t, uint16_t> CAL_DATA[monitor::AdcChNumber] = {{1, 16},            // VBUS
+                                                                          {5820, 1000 * 16},  // 12V BUS
+                                                                          {3195, 1000 * 16},  // VBAT
+                                                                          {1326, 1000 * 16}}; // BAT1
 constexpr uint32_t FULL_SCALE = 4095U;
 
 msg_t getVoltages(monitor::adc_data_t& voltages)
@@ -88,7 +92,7 @@ msg_t getVoltages(monitor::adc_data_t& voltages)
         }
         uint32_t vdda = getVdda(avgBuf[ADC_VREF_CHANNEL]);
         for(size_t i{}; i < monitor::AdcChNumber; ++i) {
-            uint16_t val = (avgBuf[i] * vdda) * CAL_DATA[i] / (FULL_SCALE * ADC_GRP_BUF_DEPTH);
+            uint16_t val = ((uint64_t)avgBuf[i] * vdda * CAL_DATA[i].first) / (FULL_SCALE * CAL_DATA[i].second);
             voltages[i] = val;
         }
     }

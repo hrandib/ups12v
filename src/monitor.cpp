@@ -23,15 +23,38 @@
 #include "monitor.h"
 #include "ch.h"
 #include "hal.h"
+#include <array>
+#include <numeric>
 
 extern msg_t getVoltages(monitor::adc_data_t& voltages);
 
 namespace monitor {
 
+template<typename T>
+class MovingAverageBuf
+{
+private:
+    std::array<T, 8> buf_{};
+    size_t i_{};
+public:
+    MovingAverageBuf& add(T val)
+    {
+        buf_[i_++] = val;
+        if(buf_.size() == i_) {
+            i_ = 0;
+        }
+        return *this;
+    }
+    uint16_t getMean()
+    {
+        return std::accumulate(buf_.cbegin(), buf_.cend(), 0) / buf_.size();
+    }
+};
+
 // 85% battery charge by default
-atomic_uint16_t chargeCutoff = 4100U;
+atomic_uint16_t chargeCutoff = 4100U * 2;
 // 55% battery charge by default
-atomic_uint16_t idleDischargeCutoff = 3850U;
+atomic_uint16_t idleDischargeCutoff = 3850U * 2;
 
 std::atomic<State> state;
 adc_data_t voltages;
@@ -41,29 +64,66 @@ const char* stateString[] = {"Idle", "Trickle", "Discharge", "Charge"};
 constexpr uint16_t SWITCH_12V_THRESHOLD = 11900U;
 constexpr uint16_t TRICKLE_HYST = 100U;
 
+std::array<MovingAverageBuf<uint16_t>, AdcChNumber> maArray;
+
 static THD_WORKING_AREA(SHELL_WA_SIZE, 128);
 THD_FUNCTION(monitorThread, )
 {
     using enum AdcChannels;
     while(true) {
-        getVoltages(voltages);
+        adc_data_t temp_voltages;
+        getVoltages(temp_voltages);
+        for(size_t i{}; i < AdcChNumber; ++i) {
+            maArray[i].add(temp_voltages[i]);
+            voltages[i] = maArray[i].getMean();
+        }
+
         uint16_t batVoltage = voltages[AdcVBat];
-        if(voltages[AdcMain] < SWITCH_12V_THRESHOLD) {
-            state = State::Discharge;
-            palClearLine(LINE_CHRG_EN);
-        }
-        else if(batVoltage < idleDischargeCutoff) {
-            state = State::Charge;
-            palSetLine(LINE_CHRG_EN);
-        }
-        else if(batVoltage > chargeCutoff) {
-            state = State::Idle;
-            palClearLine(LINE_CHRG_EN);
-            palClearLine(LINE_TRICKLE_EN);
-        }
-        else if(batVoltage < (chargeCutoff - TRICKLE_HYST)) {
-            state = State::Trickle;
-            palSetLine(LINE_TRICKLE_EN);
+        switch(state) {
+            using enum State;
+            case Idle:
+                if(voltages[AdcMain] < SWITCH_12V_THRESHOLD) {
+                    state = Discharge;
+                }
+                else if(batVoltage < idleDischargeCutoff) {
+                    state = Charge;
+                    palSetLine(LINE_CHRG_EN);
+                }
+                else if(batVoltage < (chargeCutoff - TRICKLE_HYST)) {
+                    state = Trickle;
+                    palSetLine(LINE_TRICKLE_EN);
+                }
+                break;
+            case Trickle:
+                if(voltages[AdcMain] < SWITCH_12V_THRESHOLD) {
+                    state = Discharge;
+                    palClearLine(LINE_TRICKLE_EN);
+                }
+                else if(batVoltage < idleDischargeCutoff) {
+                    state = Charge;
+                    palClearLine(LINE_TRICKLE_EN);
+                    palSetLine(LINE_CHRG_EN);
+                }
+                else if(batVoltage > chargeCutoff) {
+                    state = Idle;
+                    palClearLine(LINE_TRICKLE_EN);
+                };
+                break;
+            case Discharge:
+                if(voltages[AdcMain] > SWITCH_12V_THRESHOLD) {
+                    state = Idle;
+                }
+                break;
+            case Charge:
+                if(voltages[AdcMain] < SWITCH_12V_THRESHOLD) {
+                    state = Discharge;
+                    palClearLine(LINE_CHRG_EN);
+                }
+                else if(batVoltage > chargeCutoff) {
+                    palClearLine(LINE_CHRG_EN);
+                    state = Idle;
+                };
+                break;
         }
         chThdSleepMilliseconds(200);
     }
@@ -72,7 +132,7 @@ THD_FUNCTION(monitorThread, )
 void run()
 {
     auto* thd = chThdCreateStatic(SHELL_WA_SIZE, sizeof(SHELL_WA_SIZE), NORMALPRIO + 1, monitorThread, nullptr);
-    chRegSetThreadNameX(thd, "Monitor");
+    chRegSetThreadNameX(thd, "monitor");
 }
 
 } // data

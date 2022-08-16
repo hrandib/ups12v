@@ -76,7 +76,7 @@ void cmd_poll_aux(BaseSequentialStream* chp, int argc, char* /*argv*/[])
         }
     }
     else {
-        shellUsage(chp, "Continuously reports VBAT, BAT1, USB VBUS voltages in mV and the current state");
+        shellUsage(chp, "Continuously reports VBAT, BAT1, USB_VBUS voltages in mV and the current state");
     }
 }
 
@@ -99,8 +99,8 @@ static void cutoff(const char* what, std::atomic_uint16_t& cutoffVal, BaseSequen
                 chprintf(chp, "The value is not in valid range\r\n");
                 break;
             }
-            chprintf(chp, "%u mV\r\n", val);
-            cutoffVal = val;
+            chprintf(chp, "Per element: %umV, Battery: %umV\r\n", val, val * 2);
+            cutoffVal = val * 2;
             return;
         }
     } while(false);
