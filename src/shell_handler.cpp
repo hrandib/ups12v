@@ -35,11 +35,13 @@ static void cmd_poll(BaseSequentialStream* chp, int argc, char* argv[]);
 static void cmd_poll_aux(BaseSequentialStream* chp, int argc, char* argv[]);
 static void cmd_cutoff_charge(BaseSequentialStream* chp, int argc, char* argv[]);
 static void cmd_cutoff_discharge(BaseSequentialStream* chp, int argc, char* argv[]);
+static void print_cutoff(BaseSequentialStream* chp, int argc, char* argv[]);
 
 static const ShellCommand commands[] = {{"poll", cmd_poll},
                                         {"poll-aux", cmd_poll_aux},
                                         {"limit-charge", cmd_cutoff_charge},
                                         {"limit-discharge", cmd_cutoff_discharge},
+                                        {"limits", print_cutoff},
                                         {nullptr, nullptr}};
 static char histbuf[128];
 static const ShellConfig shell_cfg = {(BaseSequentialStream*)&SDU1, commands, histbuf, 128};
@@ -119,6 +121,14 @@ static void cmd_cutoff_charge(BaseSequentialStream* chp, int argc, char* argv[])
 static void cmd_cutoff_discharge(BaseSequentialStream* chp, int argc, char* argv[])
 {
     cutoff("idle discharge", monitor::idleDischargeCutoff, chp, argc, argv);
+}
+
+static void print_cutoff(BaseSequentialStream* chp, int /*argc*/, char* /*argv*/[])
+{
+    chprintf(chp,
+             "Charge will be stopped reaching %umV and started from %umV\r\n",
+             monitor::chargeCutoff.load(),
+             monitor::idleDischargeCutoff.load());
 }
 
 static THD_WORKING_AREA(SHELL_WA_SIZE, 512);
