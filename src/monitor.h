@@ -28,7 +28,7 @@
 namespace monitor {
 
 // AdcBat1 is a single element of 2S battery connected to GND
-enum AdcChannels { AdcVbus, AdcMain, AdcVBat, AdcBat1, AdcChNumber };
+enum AdcChannels { AdcBat1, AdcMain, AdcVBat, AdcChNumber };
 
 using std::atomic_uint16_t;
 using adc_data_t = atomic_uint16_t[AdcChNumber];

@@ -1,3 +1,4 @@
 Backup*.cdr
 *(Security copy)
 *$bak~
+build-*/

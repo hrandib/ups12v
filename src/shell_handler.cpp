@@ -70,15 +70,15 @@ void cmd_poll_aux(BaseSequentialStream* chp, int argc, char* /*argv*/[])
         while(chnGetTimeout(asyncCh, TIME_IMMEDIATE) == MSG_TIMEOUT) {
             chprintf(chp,
                      "%u  %u  %u  %s\r\n",
-                     (uint16_t)voltages[AdcVBat],
                      (uint16_t)voltages[AdcBat1],
-                     (uint16_t)voltages[AdcVbus],
+                     (uint16_t)voltages[AdcVBat] - voltages[AdcBat1],
+                     (uint16_t)voltages[AdcMain],
                      toString(state));
             chThdSleepSeconds(1);
         }
     }
     else {
-        shellUsage(chp, "Continuously reports VBAT, BAT1, USB_VBUS voltages in mV and the current state");
+        shellUsage(chp, "Continuously reports BAT1, BAT2, Main voltages in mV and the current state");
     }
 }
 
@@ -97,7 +97,7 @@ static void cutoff(const char* what, std::atomic_uint16_t& cutoffVal, BaseSequen
             if(50 <= val && val <= 100) {
                 val = convertPercents2Voltage(val);
             }
-            else if(val <= 3800 || 4200 <= val) {
+            else if(val < 3800 || 4200 < val) {
                 chprintf(chp, "The value is not in valid range\r\n");
                 break;
             }
@@ -109,7 +109,7 @@ static void cutoff(const char* what, std::atomic_uint16_t& cutoffVal, BaseSequen
     chprintf(chp, "Limits %s level\r\n", what);
     shellUsage(chp,
                "Set cut-off voltage or percentage.\r\n"
-               "  Set cut-off voltage if input value in the range 3500-4200\r\n"
+               "  Set cut-off voltage if input value in the range 3800-4200\r\n"
                "  or max charge percentage if input value in the range 50-100\r\n");
 }
 

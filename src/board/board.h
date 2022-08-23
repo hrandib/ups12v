@@ -11,7 +11,7 @@
  * Crystal resonator soldered directly on pins
  */
 #define BOARD_ST_STM32_F070_MINI
-#define BOARD_NAME "stm32-boardtoaster"
+#define BOARD_NAME "stm32-ups"
 
 #if !defined(STM32_HSECLK)
 #define STM32_HSECLK 12000000U
@@ -26,14 +26,14 @@
 /*
  * IO pins assignments.
  */
-#define GPIOA_ADC0 0U
-#define GPIOA_ADC1 1U
-#define GPIOA_ADC2 2U
-#define GPIOA_ADC3 3U
-#define GPIOA_CHRG_EN 4U
-#define GPIOA_SCL 5U
-#define GPIOA_SDA 6U
-#define GPIOA_TRICKLE_EN 7U
+#define GPIOA_CHRG_EN 0U
+#define GPIOA_BAT_EN 1U
+#define GPIOA_ADC_BAT1 2U
+#define GPIOA_ADC_V12 3U
+#define GPIOA_ADC_VBAT 4U
+#define GPIOA_TRICKLE_EN 5U
+#define GPIOA_SCL 6U
+#define GPIOA_SDA 7U
 #define GPIOA_USB_DM 11U
 #define GPIOA_USB_DP 12U
 #define GPIOA_SWDIO 13U
@@ -48,6 +48,7 @@
  * IO lines assignments.
  */
 #define LINE_CHRG_EN PAL_LINE(GPIOA, GPIOA_CHRG_EN)
+#define LINE_BAT_EN PAL_LINE(GPIOA, GPIOA_BAT_EN)
 #define LINE_TRICKLE_EN PAL_LINE(GPIOA, GPIOA_TRICKLE_EN)
 #define LINE_SWDIO PAL_LINE(GPIOA, GPIOA_SWDIO)
 #define LINE_SWCLK PAL_LINE(GPIOA, GPIOA_SWCLK)

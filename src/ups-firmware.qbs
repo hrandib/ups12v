@@ -28,7 +28,7 @@ Project {
                 "-fdata-sections",
                 "-ffunction-sections",
                 "-flto=auto", "-ffat-lto-objects",
-                "-mfloat-abi=soft"
+                "-mfloat-abi=soft",
             ]
 
             cpp.cxxFlags: [
@@ -81,7 +81,11 @@ Project {
             Properties {
                 condition: qbs.buildVariant !== "release"
                 cpp.debugInformation: true
-                cpp.optimization: "none"
+                //cpp.optimization: "none"
+                cpp.commonCompilerFlags: [
+                    "-O1"
+                ]
+
             }
             cpp.generateLinkerMapFile: true
         }

@@ -87,16 +87,19 @@ THD_FUNCTION(monitorThread, )
                 }
                 else if(batVoltage < idleDischargeCutoff) {
                     state = Charge;
+                    palSetLine(LINE_BAT_EN);
                     palSetLine(LINE_CHRG_EN);
                 }
                 else if(batVoltage < (chargeCutoff - TRICKLE_HYST)) {
                     state = Trickle;
+                    palSetLine(LINE_BAT_EN);
                     palSetLine(LINE_TRICKLE_EN);
                 }
                 break;
             case Trickle:
                 if(voltages[AdcMain] < SWITCH_12V_THRESHOLD) {
                     state = Discharge;
+                    palClearLine(LINE_BAT_EN);
                     palClearLine(LINE_TRICKLE_EN);
                 }
                 else if(batVoltage < idleDischargeCutoff) {
@@ -107,21 +110,26 @@ THD_FUNCTION(monitorThread, )
                 else if(batVoltage > chargeCutoff) {
                     state = Idle;
                     palClearLine(LINE_TRICKLE_EN);
+                    palClearLine(LINE_BAT_EN);
                 };
                 break;
             case Discharge:
                 if(voltages[AdcMain] > SWITCH_12V_THRESHOLD) {
-                    state = Idle;
+                    state = Charge;
+                    palSetLine(LINE_BAT_EN);
+                    palSetLine(LINE_CHRG_EN);
                 }
                 break;
             case Charge:
                 if(voltages[AdcMain] < SWITCH_12V_THRESHOLD) {
                     state = Discharge;
                     palClearLine(LINE_CHRG_EN);
+                    palClearLine(LINE_BAT_EN);
                 }
                 else if(batVoltage > chargeCutoff) {
+                    state = Trickle;
                     palClearLine(LINE_CHRG_EN);
-                    state = Idle;
+                    palSetLine(LINE_TRICKLE_EN);
                 };
                 break;
         }

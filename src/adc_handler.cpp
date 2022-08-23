@@ -26,8 +26,8 @@
 #include <tuple>
 
 #define ADC_GRP_BUF_DEPTH 16
-#define ADC_GRP_CHANNELS 5
-#define ADC_VREF_CHANNEL 4
+#define ADC_GRP_CHANNELS 4
+#define ADC_VREF_CHANNEL 3
 
 using buf_t = adcsample_t[ADC_GRP_BUF_DEPTH][ADC_GRP_CHANNELS];
 
@@ -44,10 +44,10 @@ static const ADCConversionGroup adcgrpcfg = {
   ADC_GRP_CHANNELS,
   nullptr,
   adcerrorcallback,
-  ADC_CFGR1_CONT | ADC_CFGR1_RES_12BIT,                                                              /* CFGR1 */
-  ADC_TR(0, 0),                                                                                      /* TR */
-  ADC_SMPR_SMP_71P5,                                                                                 /* SMPR */
-  ADC_CHSELR_CHSEL0 | ADC_CHSELR_CHSEL1 | ADC_CHSELR_CHSEL2 | ADC_CHSELR_CHSEL3 | ADC_CHSELR_CHSEL17 /* CHSELR */
+  ADC_CFGR1_CONT | ADC_CFGR1_RES_12BIT,                                          /* CFGR1 */
+  ADC_TR(0, 0),                                                                  /* TR */
+  ADC_SMPR_SMP_71P5,                                                             /* SMPR */
+  ADC_CHSELR_CHSEL2 | ADC_CHSELR_CHSEL3 | ADC_CHSELR_CHSEL4 | ADC_CHSELR_CHSEL17 /* CHSELR */
 };
 
 void initAdc()
@@ -75,10 +75,11 @@ static inline uint16_t getVdda(uint16_t vref)
 
 // Numerator/Denominator pairs
 // Evalutated denominator should be additionally multiplied by the buf depth
-constexpr std::pair<uint16_t, uint16_t> CAL_DATA[monitor::AdcChNumber] = {{1, 16},            // VBUS
-                                                                          {5820, 1000 * 16},  // 12V BUS
-                                                                          {3195, 1000 * 16},  // VBAT
-                                                                          {1326, 1000 * 16}}; // BAT1
+constexpr std::pair<uint16_t, uint16_t> CAL_DATA[monitor::AdcChNumber] = {
+  {1391, 1000 * 16}, // BAT1
+  {3949, 1000 * 16}, // 12V BUS
+  {2678, 1000 * 16}  // VBAT
+};
 constexpr uint32_t FULL_SCALE = 4095U;
 
 msg_t getVoltages(monitor::adc_data_t& voltages)
