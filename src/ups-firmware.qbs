@@ -104,6 +104,7 @@ Project {
 
         cpp.includePaths: [
             "impl",
+            "drivers",
             project.CH_PATH + "/os/various/shell",
             project.CH_PATH + "/os/various/cpp_wrappers"
         ]
@@ -126,6 +127,15 @@ Project {
         Group {
             name: "utility"
             prefix: "utility/"
+            files: [
+                "*.h",
+                "*.cpp"
+            ]
+        }
+
+        Group {
+            name: "drivers"
+            prefix: "drivers/"
             files: [
                 "*.h",
                 "*.cpp"
