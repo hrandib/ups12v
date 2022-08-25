@@ -1,9 +1,16 @@
 #pragma once
 
 #include "stm32f0xx.h"
+#include <concepts>
 #include <type_traits>
 
 namespace Mcucpp {
+
+template<std::unsigned_integral... Positions>
+consteval uint16_t getMask(Positions... pos)
+{
+    return ((1U << pos) | ...);
+}
 
 namespace Gpio {
 enum InputConf { Input };

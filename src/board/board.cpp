@@ -1,12 +1,5 @@
 #include "gpio.h"
 #include "hal.h"
-#include <concepts>
-
-template<std::unsigned_integral... Positions>
-consteval uint16_t getMask(Positions... pos)
-{
-    return ((1U << pos) | ...);
-}
 
 static inline void stm32_gpio_init()
 {
