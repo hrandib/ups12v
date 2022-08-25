@@ -1,2 +1,2 @@
 build-*/
-hello.qbs.user.*
+*qbs.user*
