@@ -26,9 +26,6 @@
 #include "shell_handler.h"
 #include "usbcfg.h"
 
-/*
- * Application entry point.
- */
 int main()
 {
     /*
@@ -62,9 +59,7 @@ int main()
     initAdc();
     monitor::run();
     shellRun();
-    /*
-     * Normal main() thread activity, spawning shells.
-     */
+
     while(true) {
         systime_t time = serusbcfg.usbp->state == USB_ACTIVE ? 100 : 1000;
         palToggleLine(LINE_LED);
