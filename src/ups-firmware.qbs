@@ -105,6 +105,7 @@ Project {
         cpp.includePaths: [
             "impl",
             "drivers",
+            "resources",
             project.CH_PATH + "/os/various/shell",
             project.CH_PATH + "/os/various/cpp_wrappers"
         ]
@@ -136,6 +137,15 @@ Project {
         Group {
             name: "drivers"
             prefix: "drivers/"
+            files: [
+                "*.h",
+                "*.cpp"
+            ]
+        }
+
+        Group {
+            name: "resources"
+            prefix: "resources/"
             files: [
                 "*.h",
                 "*.cpp"
