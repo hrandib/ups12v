@@ -26,7 +26,7 @@
 
 #include "cstdint"
 
-namespace Mcudrv {
+namespace Mcucpp {
 namespace Resources {
 namespace Internal {
 extern const uint8_t font_5x8[], font_10x16[];
@@ -108,6 +108,6 @@ const Font font5x8(Internal::font_5x8);
 const Font font10x16(Internal::font_10x16);
 enum Color { Clear, Solid = 0xFF };
 } // Resources
-} // Mcudrv
+} // Mcucpp
 
 #endif

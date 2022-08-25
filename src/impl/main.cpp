@@ -21,6 +21,7 @@
  */
 
 #include "adc_handler.h"
+#include "display_handler.h"
 #include "hal.h"
 #include "monitor.h"
 #include "shell_handler.h"
@@ -58,6 +59,7 @@ int main()
 
     initAdc();
     monitor::run();
+    display::run();
     shellRun();
 
     while(true) {

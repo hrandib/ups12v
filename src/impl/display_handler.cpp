@@ -20,22 +20,41 @@
  * SOFTWARE.
  */
 
-#include "i2c_fallback.h"
+#include "ch.h"
+#include "ssd1306.h"
 
 namespace display {
 
-using Scl = Mcucpp::Pa6;
-using Sda = Mcucpp::Pa7;
-using Twi = i2c::SoftTwi<Scl, Sda>;
+using namespace Mcucpp;
 
-void init()
+using Scl = Pa6;
+using Sda = Pa7;
+using Twi = i2c::SoftTwi<Scl, Sda>;
+using Disp = ssd1306<Twi, ssd1306_128x32>;
+
+static THD_WORKING_AREA(DISP_WA_SIZE, 256);
+THD_FUNCTION(displayThread, )
 {
+    chThdSetPriority(HIGHPRIO - 1);
     Twi::Init();
-    //    sleep(MS2ST(100));
-    //    Disp::Init();
-    //    Disp::Fill();
-    //    Disp::SetContrast(10);
-    //    start(HIGHPRIO - 1);
+    chThdSleepMilliseconds(100);
+    Disp::Init();
+    Disp::Fill();
+    Disp::SetContrast(10);
+
+    Disp::Puts2X("HELLO!!");
+    while(true) {
+        chThdSleepSeconds(2);
+        Disp::Off();
+        chThdSleepSeconds(2);
+        Disp::On();
+    }
+}
+
+void run()
+{
+    auto* thd = chThdCreateStatic(DISP_WA_SIZE, sizeof(DISP_WA_SIZE), NORMALPRIO, displayThread, nullptr);
+    chRegSetThreadNameX(thd, "display");
 }
 
 } // display

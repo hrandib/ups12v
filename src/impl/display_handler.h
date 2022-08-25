@@ -25,7 +25,7 @@
 
 namespace display {
 
-void init();
+void run();
 
 } // display
 

@@ -136,5 +136,5 @@ void shellRun()
 {
     shellInit();
     auto* thd = chThdCreateStatic(SHELL_WA_SIZE, sizeof(SHELL_WA_SIZE), NORMALPRIO, shellThread, (void*)&shell_cfg);
-    chRegSetThreadNameX(thd, "Shell");
+    chRegSetThreadNameX(thd, "shell");
 }

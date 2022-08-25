@@ -87,7 +87,6 @@ Project {
                 ]
 
             }
-            cpp.generateLinkerMapFile: true
         }
     }
 
@@ -101,6 +100,7 @@ Project {
 
         consoleApplication: false
         cpp.executableSuffix: ".elf"
+        cpp.generateLinkerMapFile: false
 
         cpp.includePaths: [
             "impl",

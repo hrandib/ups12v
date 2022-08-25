@@ -22,7 +22,6 @@
 #ifndef I2C_FALLBACK_H
 #define I2C_FALLBACK_H
 
-#include "ch_extended.h"
 #include "gpio.h"
 
 namespace i2c {
@@ -34,17 +33,26 @@ enum AddrType { Addr7bit, Addr10bit };
 enum StopMode { Stop, NoStop };
 enum AckState { NoAck, Ack };
 
-template<typename Scl, typename Sda>
+template<uint8_t NOPS>
+static inline void nops()
+{
+    __NOP();
+    nops<NOPS - 1>();
+}
+template<>
+inline void nops<0>()
+{ }
+
+template<typename Scl, typename Sda, uint8_t nops_delay = 3>
 class SoftTwi
+
 {
 private:
     static void Delay()
     {
-        __NOP();
-        __NOP();
-        __NOP();
-        __NOP();
+        nops<nops_delay>();
     }
+
     static bool Release()
     {
         for(uint8_t scl = 0; scl < 10; ++scl) {

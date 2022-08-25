@@ -102,6 +102,16 @@ public:
         uint8_t seq[3] = {CtrlCmdStream, CmdSetContrast, uint8_t(con & 0x7F)};
         Twi::Write(BaseAddr, seq, sizeof(seq));
     }
+    static void On()
+    {
+        uint8_t seq[2] = {CtrlCmdSingle, CmdDisplayOn};
+        Twi::Write(BaseAddr, seq, sizeof(seq));
+    }
+    static void Off()
+    {
+        uint8_t seq[2] = {CtrlCmdSingle, CmdDisplayOff};
+        Twi::Write(BaseAddr, seq, sizeof(seq));
+    }
     static void SetX(uint8_t x)
     {
         const uint8_t seq[] = {

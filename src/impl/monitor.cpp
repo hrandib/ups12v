@@ -66,7 +66,7 @@ constexpr uint16_t TRICKLE_HYST = 100U;
 
 std::array<MovingAverageBuf<uint16_t>, AdcChNumber> maArray;
 
-static THD_WORKING_AREA(SHELL_WA_SIZE, 128);
+static THD_WORKING_AREA(MONITOR_WA_SIZE, 128);
 THD_FUNCTION(monitorThread, )
 {
     using enum AdcChannels;
@@ -139,7 +139,7 @@ THD_FUNCTION(monitorThread, )
 
 void run()
 {
-    auto* thd = chThdCreateStatic(SHELL_WA_SIZE, sizeof(SHELL_WA_SIZE), NORMALPRIO + 1, monitorThread, nullptr);
+    auto* thd = chThdCreateStatic(MONITOR_WA_SIZE, sizeof(MONITOR_WA_SIZE), NORMALPRIO + 1, monitorThread, nullptr);
     chRegSetThreadNameX(thd, "monitor");
 }
 
