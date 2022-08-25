@@ -92,32 +92,51 @@ private:
     };
     static const uint8_t initSequence[24];
     static uint8_t x_, y_, prevFontHeight_;
+
+    // By page offset, y = 1 equals to 8 pixels offset
+    static void SetYint(uint8_t y)
+    {
+        const uint8_t seq[] = {CtrlCmdSingle, uint8_t(CmdSetPageStart | (y & MaxYpages))};
+        Twi::Write(BaseAddr, seq, sizeof(seq));
+        y_ = y;
+    }
+
+    static void SetXYint(uint8_t x, uint8_t y)
+    {
+        SetX(x);
+        SetYint(y);
+    }
 public:
     static void Init()
     {
         Twi::Write(BaseAddr, initSequence, sizeof(initSequence));
     }
+
     static void SetContrast(uint8_t con)
     {
         uint8_t seq[3] = {CtrlCmdStream, CmdSetContrast, uint8_t(con & 0x7F)};
         Twi::Write(BaseAddr, seq, sizeof(seq));
     }
+
     static void On()
     {
         uint8_t seq[2] = {CtrlCmdSingle, CmdDisplayOn};
         Twi::Write(BaseAddr, seq, sizeof(seq));
     }
+
     static void Off()
     {
         uint8_t seq[2] = {CtrlCmdSingle, CmdDisplayOff};
         Twi::Write(BaseAddr, seq, sizeof(seq));
     }
+
     static void Rotate180(bool rotate)
     {
         auto val = (uint8_t)rotate;
         uint8_t seq[3] = {CtrlCmdStream, CmdSegmentRemap | val, CmdComScanMode | (val << 3)};
         Twi::Write(BaseAddr, seq, sizeof(seq));
     }
+
     static void SetX(uint8_t x)
     {
         const uint8_t seq[] = {
@@ -125,60 +144,65 @@ public:
         Twi::Write(BaseAddr, seq, sizeof(seq));
         x_ = x;
     }
+
     static void SetY(uint8_t y)
     {
-        const uint8_t seq[] = {CtrlCmdSingle, uint8_t(CmdSetPageStart | (y & MaxYpages))};
-        Twi::Write(BaseAddr, seq, sizeof(seq));
-        y_ = y;
+        SetYint(y);
+        prevFontHeight_ = 1;
     }
+
     static void SetXY(uint8_t x, uint8_t y)
     {
         SetX(x);
         SetY(y);
     }
+
     static void Fill(const Color color = Resources::Clear)
     {
         for(uint8_t y = 0; y <= MaxYpages; ++y) {
-            SetXY(0, y);
+            SetXYint(0, y);
             Twi::WriteNoStop(BaseAddr, CtrlDataStream);
             for(uint8_t x = 0; x < 128; ++x) {
                 Twi::WriteByte(color);
             }
             Twi::Stop();
         }
-        SetXY(0, 0);
+        SetXYint(0, 0);
     }
+
     static void Fill(uint8_t x, uint8_t xRange, uint8_t y, uint8_t yRange, Color color = Resources::Clear)
     {
         for(uint8_t ypos = 0; ypos < yRange; ++ypos) {
-            SetXY(x, y + ypos);
+            SetXYint(x, y + ypos);
             Twi::WriteNoStop(BaseAddr, CtrlDataStream);
             for(uint8_t xpos = 0; xpos < xRange; ++xpos) {
                 Twi::WriteByte(color);
             }
             Twi::Stop();
         }
-        SetXY(x + xRange, y);
+        SetXYint(x + xRange, y);
     }
+
     static void Draw(const Bitmap& bmap, uint8_t x = x_, uint8_t y = y_)
     {
         for(uint8_t ypos = 0; ypos < (bmap.Height() >> 3); ++ypos) {
-            SetXY(x, y + ypos);
+            SetXYint(x, y + ypos);
             Twi::WriteNoStop(BaseAddr, CtrlDataStream);
             for(uint8_t x = 0; x < bmap.Width(); ++x) {
                 Twi::WriteByte(bmap[x + bmap.Width() * ypos]);
             }
             Twi::Stop();
         }
-        SetXY(x + bmap.Width(), y);
+        SetXYint(x + bmap.Width(), y);
     }
+
     static void Draw2X(const Bitmap& bmap, uint8_t x = x_, uint8_t y = y_)
     {
         // buf size should as bigger as width of the biggest font
         uint8_t buf[10];
         uint8_t bufIndex{};
         for(uint8_t ypos = 0; ypos < (bmap.Height() >> 3); ++ypos) {
-            SetXY(x, y + (ypos * 2));
+            SetXYint(x, y + (ypos * 2));
             Twi::WriteNoStop(BaseAddr, CtrlDataStream);
             for(uint8_t x = 0; x < bmap.Width(); ++x) {
                 uint8_t data = bmap[x + bmap.Width() * ypos];
@@ -200,7 +224,7 @@ public:
             }
             bufIndex = 0;
             Twi::Stop();
-            SetXY(x, y + (ypos * 2) + 1);
+            SetXYint(x, y + (ypos * 2) + 1);
             Twi::WriteNoStop(BaseAddr, CtrlDataStream);
             for(uint8_t x = 0; x < bmap.Width(); ++x) {
                 Twi::WriteByte(buf[x]);
@@ -208,7 +232,7 @@ public:
             }
             Twi::Stop();
         }
-        SetXY(x + (bmap.Width() * 2), y);
+        SetXYint(x + (bmap.Width() * 2), y);
     }
 
     static bool ProcessSpecialChars(uint8_t ch, uint8_t charHeightInBytes, uint8_t charWidth, uint8_t charSpacing)
@@ -218,7 +242,7 @@ public:
                 SetX(0);
                 break;
             case '\n':
-                SetY(y_ + charHeightInBytes);
+                SetYint(y_ + charHeightInBytes);
                 break;
             case '\b':
                 SetX(x_ - (charWidth + charSpacing));
@@ -233,9 +257,10 @@ public:
         // processed
         return true;
     }
+
     static void AdjustHeightOffset(uint8_t charHeightInBytes)
     {
-        int8_t diff = (int8_t)(prevFontHeight_ - charHeightInBytes);
+        auto diff = prevFontHeight_ - charHeightInBytes;
         if(diff) {
             uint8_t ypos = y_;
             if(diff < 0) { // current font bigger than previous
@@ -247,25 +272,29 @@ public:
             else if(diff > 0) { // current font smaller than previous
                 ypos += diff;
             }
-            SetY(ypos);
+            SetYint(ypos);
             prevFontHeight_ = charHeightInBytes;
         }
     }
+
     static void Putch(uint8_t ch, const Font& font = Resources::font5x8)
     {
         const uint8_t charHeightInBytes = font.Height() >> 3;
         const uint8_t charWidth = font.Width();
         const uint8_t charSpacing = font.Width() >> 2;
-        ProcessSpecialChars(ch, charHeightInBytes, charWidth, charSpacing);
+        if(ProcessSpecialChars(ch, charHeightInBytes, charWidth, charSpacing)) {
+            return;
+        }
         AdjustHeightOffset(charHeightInBytes);
         // end of line
         if((Type::Max_X - x_) < charWidth) {
-            SetXY(0, y_ + charHeightInBytes);
+            SetXYint(0, y_ + charHeightInBytes);
         }
         Draw(Bitmap(font[ch], font.Width(), font.Height()));
         // Space between chars
         Fill(x_, charSpacing, y_, charHeightInBytes);
     }
+
     static void Putch2X(uint8_t ch, const Font& font = Resources::font5x8)
     {
         const uint8_t charHeightInBytes = font.Height() >> 2;
@@ -277,10 +306,10 @@ public:
         AdjustHeightOffset(charHeightInBytes);
         // end of line
         if((Type::Max_X - x_) < charWidth) {
-            SetXY(0, y_ + charHeightInBytes);
+            SetXYint(0, y_ + charHeightInBytes);
         }
         Draw2X(Bitmap(font[ch], font.Width(), font.Height()));
-        // Space between chars
+        //  Space between chars
         Fill(x_, charSpacing, y_, charHeightInBytes);
     }
 
