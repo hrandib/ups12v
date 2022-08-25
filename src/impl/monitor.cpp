@@ -34,9 +34,13 @@ template<typename T>
 class MovingAverageBuf
 {
 private:
-    std::array<T, 8> buf_{};
+    std::array<T, 8> buf_;
     size_t i_{};
 public:
+    MovingAverageBuf(T init)
+    {
+        buf_.fill(init);
+    }
     MovingAverageBuf& add(T val)
     {
         buf_[i_++] = val;
@@ -51,20 +55,22 @@ public:
     }
 };
 
+static constexpr uint16_t CUTOFF_DEFAULT = 4050;
+
 // 85% battery charge by default
-atomic_uint16_t chargeCutoff = 4100U * 2;
+atomic_uint16_t chargeCutoff = CUTOFF_DEFAULT * 2;
 // 55% battery charge by default
 atomic_uint16_t idleDischargeCutoff = 3850U * 2;
 
 std::atomic<State> state;
 adc_data_t voltages;
 
-const char* stateString[] = {"Idle", "Trickle", "Discharge", "Charge"};
+const char* stateString[] = {"IDLE", "TRICKLE", "DISCHARGE", "CHARGE"};
 
 constexpr uint16_t SWITCH_12V_THRESHOLD = 11900U;
 constexpr uint16_t TRICKLE_HYST = 100U;
 
-std::array<MovingAverageBuf<uint16_t>, AdcChNumber> maArray;
+std::array<MovingAverageBuf<uint16_t>, AdcChNumber> maArray{{CUTOFF_DEFAULT, 12000, CUTOFF_DEFAULT * 2}};
 
 static THD_WORKING_AREA(MONITOR_WA_SIZE, 128);
 THD_FUNCTION(monitorThread, )
