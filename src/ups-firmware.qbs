@@ -103,8 +103,9 @@ Project {
         cpp.executableSuffix: ".elf"
 
         cpp.includePaths: [
-            project.CH_PATH + "/os/various/shell/",
-            project.CH_PATH + "/os/various/cpp_wrappers/"
+            "impl",
+            project.CH_PATH + "/os/various/shell",
+            project.CH_PATH + "/os/various/cpp_wrappers"
         ]
 
         Group {
@@ -168,15 +169,21 @@ Project {
             ]
         }
 
-        files: [
-            "adc_handler.cpp",
-            "adc_handler.h",
-            "monitor.cpp",
-            "monitor.h",
-            "shell_handler.cpp",
-            "shell_handler.h",
-            "main.cpp",
-        ]
+        Group {
+            name: "impl"
+            prefix: "impl/"
+            files: [
+                "adc_handler.cpp",
+                "adc_handler.h",
+                "display_handler.cpp",
+                "display_handler.h",
+                "monitor.cpp",
+                "monitor.h",
+                "shell_handler.cpp",
+                "shell_handler.h",
+                "main.cpp",
+            ]
+        }
 
         Group {
             name: "Linker files"
