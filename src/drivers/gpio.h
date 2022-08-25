@@ -470,6 +470,24 @@ template<typename Pin>
 using Exti = Private::ExtiImplementation<Pin>;
 
 constexpr Private::DataT ALL_PINS = 0xFFFF;
+
+constexpr uint16_t P0 = 0x01;
+constexpr uint16_t P1 = 0x02;
+constexpr uint16_t P2 = 0x04;
+constexpr uint16_t P3 = 0x08;
+constexpr uint16_t P4 = 0x10;
+constexpr uint16_t P5 = 0x20;
+constexpr uint16_t P6 = 0x40;
+constexpr uint16_t P7 = 0x80;
+constexpr uint16_t P8 = 0x0100;
+constexpr uint16_t P9 = 0x0200;
+constexpr uint16_t P10 = 0x0400;
+constexpr uint16_t P11 = 0x0800;
+constexpr uint16_t P12 = 0x1000;
+constexpr uint16_t P13 = 0x2000;
+constexpr uint16_t P14 = 0x4000;
+constexpr uint16_t P15 = 0x8000;
+
 } // Gpio
 
 #define PORTDEF(x, y, z) typedef Gpio::Private::PortImplementation<GPIO##x##_BASE, z> Port##y
@@ -512,22 +530,5 @@ PINSDEF(e)
 PINSDEF(f)
 
 typedef Gpio::Private::TPin<NullPort, 0x00> Nullpin;
-
-#define P0 0x01
-#define P1 0x02
-#define P2 0x04
-#define P3 0x08
-#define P4 0x10
-#define P5 0x20
-#define P6 0x40
-#define P7 0x80
-#define P8 0x0100
-#define P9 0x0200
-#define P10 0x0400
-#define P11 0x0800
-#define P12 0x1000
-#define P13 0x2000
-#define P14 0x4000
-#define P15 0x8000
 
 } // Mcucpp

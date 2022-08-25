@@ -23,4 +23,10 @@
 #ifndef DISPLAY_HANDLER_H
 #define DISPLAY_HANDLER_H
 
+namespace display {
+
+void init();
+
+} // display
+
 #endif // DISPLAY_HANDLER_H

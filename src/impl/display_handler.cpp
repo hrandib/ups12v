@@ -20,3 +20,22 @@
  * SOFTWARE.
  */
 
+#include "i2c_fallback.h"
+
+namespace display {
+
+using Scl = Mcucpp::Pa6;
+using Sda = Mcucpp::Pa7;
+using Twi = i2c::SoftTwi<Scl, Sda>;
+
+void init()
+{
+    Twi::Init();
+    //    sleep(MS2ST(100));
+    //    Disp::Init();
+    //    Disp::Fill();
+    //    Disp::SetContrast(10);
+    //    start(HIGHPRIO - 1);
+}
+
+} // display

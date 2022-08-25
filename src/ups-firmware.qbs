@@ -106,6 +106,7 @@ Project {
             "impl",
             "drivers",
             "resources",
+            "utility",
             project.CH_PATH + "/os/various/shell",
             project.CH_PATH + "/os/various/cpp_wrappers"
         ]
