@@ -77,11 +77,11 @@ private:
         CmdSetPageStart = 0xB0,      // | 0..7 - Only in Page mode, default: 0xB0
         CmdSetColStartLower = 0x00,  // | 0..15 - Only in Page mode, Lower nibble of column
         CmdSetColStartHigher = 0x10, // | 0..15  - Only in Page mode, Higher nibble of column
-        CmdSegmentRemap = 0xA1,
-        CmdMuxRatio = 0xA8, // with followed by ratio (default: 0x3F = 64 MUX)
-        CmdComScanMode = 0xC8,
-        CmdDisplayOffset = 0xD3, // with followed by 0x00
-        CmdComPinMap = 0xDA,     // with followed by 0x12
+        CmdSegmentRemap = 0xA0,      // | 0/1 Normal/Remap
+        CmdMuxRatio = 0xA8,          // with followed by ratio (default: 0x3F = 64 MUX)
+        CmdComScanMode = 0xC0,       // | 0/8 Normal/Reverse
+        CmdDisplayOffset = 0xD3,     // with followed by 0x00
+        CmdComPinMap = 0xDA,         // with followed by 0x12
         CmdNop = 0xE3,
 
         CmdClkDiv = 0xD5,        // with followed by value
@@ -110,6 +110,12 @@ public:
     static void Off()
     {
         uint8_t seq[2] = {CtrlCmdSingle, CmdDisplayOff};
+        Twi::Write(BaseAddr, seq, sizeof(seq));
+    }
+    static void Rotate180(bool rotate)
+    {
+        auto val = (uint8_t)rotate;
+        uint8_t seq[3] = {CtrlCmdStream, CmdSegmentRemap | val, CmdComScanMode | (val << 3)};
         Twi::Write(BaseAddr, seq, sizeof(seq));
     }
     static void SetX(uint8_t x)
