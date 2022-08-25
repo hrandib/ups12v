@@ -1,3 +1,6 @@
 [submodule "src/ChibiOS"]
 	path = src/ChibiOS
 	url = git@github.com:hrandib/ChibiOS.git
+[submodule "src/chibios-qbs"]
+	path = src/chibios-qbs
+	url = git@github.com:hrandib/chibios-qbs.git
