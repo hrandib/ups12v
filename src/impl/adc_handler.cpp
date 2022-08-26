@@ -69,16 +69,16 @@ static uint16_t sum(const adcsample_t* samples)
 static inline uint16_t getVdda(uint16_t vref)
 {
     static const uint16_t& VREFINT_CAL = *(const uint16_t*)0x1FFFF7BA;
-    const auto VDDA = (3300U * (VREFINT_CAL - 8) * ADC_GRP_BUF_DEPTH) / vref;
+    const auto VDDA = (3300U * VREFINT_CAL * ADC_GRP_BUF_DEPTH) / vref;
     return VDDA;
 }
 
 // Numerator/Denominator pairs
 // Evalutated denominator should be additionally multiplied by the buf depth
 constexpr std::pair<uint16_t, uint16_t> CAL_DATA[monitor::AdcChNumber] = {
-  {1391, 1000 * 16}, // BAT1
-  {3949, 1000 * 16}, // 12V BUS
-  {2678, 1000 * 16}  // VBAT
+  {1383, 1000 * 16}, // BAT1
+  {3923, 1000 * 16}, // 12V BUS
+  {2662, 1000 * 16}  // VBAT
 };
 constexpr uint32_t FULL_SCALE = 4095U;
 

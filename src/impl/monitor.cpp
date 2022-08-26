@@ -55,12 +55,12 @@ public:
     }
 };
 
-static constexpr uint16_t CUTOFF_DEFAULT = 4050;
+static constexpr uint16_t CUTOFF_DEFAULT = 4100;
 
 // 85% battery charge by default
 atomic_uint16_t chargeCutoff = CUTOFF_DEFAULT * 2;
 // 55% battery charge by default
-atomic_uint16_t idleDischargeCutoff = 3850U * 2;
+atomic_uint16_t idleDischargeCutoff = 3950U * 2;
 
 std::atomic<State> state;
 adc_data_t voltages;

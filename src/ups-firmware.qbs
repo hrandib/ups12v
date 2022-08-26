@@ -48,7 +48,7 @@ Project {
 
             cpp.defines: [
                 MCU,
-                "CH_CUSTOMER_LIC_PORT_CM4=TRUE",
+                "CH_CUSTOMER_LIC_PORT_CM0=TRUE",
             ]
 
             cpp.linkerFlags: [
