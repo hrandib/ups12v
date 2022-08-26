@@ -26,84 +26,85 @@
 
 namespace Rtos {
 
-  using chibios_rt::System;
-  using chibios_rt::BaseThread;
-  using chibios_rt::ThreadReference;
-  using chibios_rt::BaseStaticThread;
-  using chibios_rt::Mailbox;
-  using chibios_rt::BinarySemaphore;
+using chibios_rt::BaseStaticThread;
+using chibios_rt::BaseThread;
+using chibios_rt::BinarySemaphore;
+using chibios_rt::Mailbox;
+using chibios_rt::System;
+using chibios_rt::ThreadReference;
 
-  enum class Status {
-    Success,
-    Failure
-  };
+enum class Status { Success, Failure };
 
-  struct SysLockGuard
-  {
-    SysLockGuard() {
-      System::lock();
+struct SysLockGuard
+{
+    SysLockGuard()
+    {
+        System::lock();
     }
-    ~SysLockGuard() {
-      System::unlock();
+    ~SysLockGuard()
+    {
+        System::unlock();
     }
-  };
-  struct SysLockGuardFromISR
-  {
-    SysLockGuardFromISR() {
-      System::lockFromIsr();
+};
+struct SysLockGuardFromISR
+{
+    SysLockGuardFromISR()
+    {
+        System::lockFromIsr();
     }
-    ~SysLockGuardFromISR() {
-      System::unlockFromIsr();
+    ~SysLockGuardFromISR()
+    {
+        System::unlockFromIsr();
     }
-  };
+};
 
-  struct SemLockGuard
-  {
+struct SemLockGuard
+{
     BinarySemaphore& sem;
     SemLockGuard(BinarySemaphore& sem_) : sem{sem_}
     {
-      sem.wait();
+        sem.wait();
     }
     ~SemLockGuard()
     {
-      sem.signal();
+        sem.signal();
     }
-  };
+};
 
-
-  //chibios_rt::ThreadStayPoint implementation is broken
-  class ThreadStayPoint
-  {
-  private:
+// chibios_rt::ThreadStayPoint implementation is broken
+class ThreadStayPoint
+{
+private:
     ::thread_reference_t ref_;
-  public:
+public:
     ThreadStayPoint() : ref_{}
-    {  }
-    msg_t Suspend(systime_t timeout = 0) {
-      SysLockGuard lock;
-      return timeout ? chThdSuspendTimeoutS(&ref_, timeout) : chThdSuspendS(&ref_);
+    { }
+    msg_t Suspend(systime_t timeout = 0)
+    {
+        SysLockGuard lock;
+        return timeout ? chThdSuspendTimeoutS(&ref_, timeout) : chThdSuspendS(&ref_);
     }
     void Resume(msg_t msg = MSG_OK)
     {
-      SysLockGuard lock;
-      chThdResumeS(&ref_, msg);
+        SysLockGuard lock;
+        chThdResumeS(&ref_, msg);
     }
     void ResumeFromISR(msg_t msg = MSG_OK)
     {
-      SysLockGuardFromISR lock;
-      chThdResumeI(&ref_, msg);
+        SysLockGuardFromISR lock;
+        chThdResumeI(&ref_, msg);
     }
-  };
+};
 
-  static inline void Sleep(systime_t interval)
-  {
-      chThdSleep(interval);
-  }
+static inline void Sleep(systime_t interval)
+{
+    chThdSleep(interval);
+}
 
-  static inline ::thread_t* GetThdSelf()
-  {
+static inline ::thread_t* GetThdSelf()
+{
     return chThdGetSelfX();
-  }
-}//Rtos
+}
+} // Rtos
 
 #endif // CH_EXTENDED_H
