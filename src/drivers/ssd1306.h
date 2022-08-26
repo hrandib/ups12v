@@ -326,6 +326,20 @@ public:
             Putch2X(*str++, font);
         }
     }
+
+    static void Putbuf(const uint8_t* str, size_t n, const Font& font = Resources::font5x8)
+    {
+        while(n--) {
+            Putch(*str++, font);
+        }
+    }
+
+    static void Putbuf2X(const uint8_t* str, size_t n, const Font& font = Resources::font5x8)
+    {
+        while(n--) {
+            Putch2X(*str++, font);
+        }
+    }
 };
 template<typename Twi, typename Type>
 uint8_t ssd1306<Twi, Type>::x_;
