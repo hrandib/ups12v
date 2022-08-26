@@ -90,7 +90,7 @@ private:
 
         CmdChargePump = 0x8D // with followed by 0x14(internal gen) or 0x10(external gen)
     };
-    static const uint8_t initSequence[24];
+    static const uint8_t initSequence[];
     static uint8_t x_, y_, prevFontHeight_;
 
     // By page offset, y = 1 equals to 8 pixels offset
@@ -334,32 +334,32 @@ uint8_t ssd1306<Twi, Type>::y_;
 template<typename Twi, typename Type>
 uint8_t ssd1306<Twi, Type>::prevFontHeight_ = 1;
 template<typename Twi, typename Type>
-const uint8_t ssd1306<Twi, Type>::initSequence[] = {CtrlCmdStream,
-                                                    CmdSetColRange,
-                                                    0x00,
-                                                    0x7F,
-                                                    //  CmdSetPageRange, 0x00, 0x07,
-                                                    CmdDisplayOff, // default
-                                                    //  CmdClkDiv, 0x80,    //default = 0x80
-                                                    //  CmdDisplayOffset, 0x00, //default = 0
-                                                    CmdMuxRatio,
-                                                    Type::CmdMuxRatioValue,
-                                                    CmdChargePump,
-                                                    0x14,
-                                                    CmdMemAddrMode,
-                                                    ModePage, // default = 0x02 (Page)
-                                                    CmdSegmentRemap,
-                                                    CmdComScanMode,
-                                                    CmdComPinMap,
-                                                    Type::CmdComPinMapValue,
-                                                    CmdSetContrast,
-                                                    0xCF, // default = 0x7F
-                                                    CmdPrecharge,
-                                                    0xF1,
-                                                    CmdVComHDeselect,
-                                                    0x40, // default = 0x20
-                                                    CmdDisplayRam,
-                                                    CmdDisplayOn};
+const uint8_t ssd1306<Twi, Type>::initSequence[23] = {CtrlCmdStream,
+                                                      CmdSetColRange,
+                                                      0x00,
+                                                      0x7F,
+                                                      //  CmdSetPageRange, 0x00, 0x07,
+                                                      CmdDisplayOff, // default
+                                                      //  CmdClkDiv, 0x80,    //default = 0x80
+                                                      //  CmdDisplayOffset, 0x00, //default = 0
+                                                      CmdMuxRatio,
+                                                      Type::CmdMuxRatioValue,
+                                                      CmdChargePump,
+                                                      0x14,
+                                                      CmdMemAddrMode,
+                                                      ModePage, // default = 0x02 (Page)
+                                                      CmdSegmentRemap,
+                                                      CmdComScanMode,
+                                                      CmdComPinMap,
+                                                      Type::CmdComPinMapValue,
+                                                      CmdSetContrast,
+                                                      0xCF, // default = 0x7F
+                                                      CmdPrecharge,
+                                                      0xF1,
+                                                      CmdVComHDeselect,
+                                                      0x40, // default = 0x20
+                                                      CmdDisplayRam,
+                                                      CmdDisplayOn};
 
 } // Mcudrv
 
