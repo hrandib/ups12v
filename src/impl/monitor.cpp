@@ -58,14 +58,14 @@ public:
 static constexpr uint16_t CUTOFF_DEFAULT = 4100;
 
 // 85% battery charge by default
-atomic_uint16_t chargeCutoff = CUTOFF_DEFAULT * 2;
+a16_t chargeCutoff = CUTOFF_DEFAULT * 2;
 // 55% battery charge by default
-atomic_uint16_t idleDischargeCutoff = 3950U * 2;
+a16_t idleDischargeCutoff = 3950U * 2;
 
 std::atomic<State> state;
 adc_data_t voltages;
 
-const char* stateString[] = {"IDLE", "TRICKLE", "DISCHARGE", "CHARGE"};
+constexpr sv stateString[] = {"IDLE", "TRICKLE", "DISCHARGE", "CHARGE"};
 
 constexpr uint16_t SWITCH_12V_THRESHOLD = 11900U;
 constexpr uint16_t TRICKLE_HYST = 100U;

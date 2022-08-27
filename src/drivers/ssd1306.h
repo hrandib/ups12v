@@ -43,7 +43,10 @@ protected:
 };
 struct ssd1306_128x32
 {
-    enum { Max_X = 127, Max_Y = 31 };
+    enum {
+        Max_X = 127,
+        Max_Y = 31,
+    };
 protected:
     enum { CmdComPinMapValue = 0x02, CmdMuxRatioValue = 0x1F };
 };
@@ -110,6 +113,15 @@ public:
     static void Init()
     {
         Twi::Write(BaseAddr, initSequence, sizeof(initSequence));
+    }
+
+    constexpr static uint8_t GetXRes()
+    {
+        return Type::Max_X;
+    }
+    constexpr static uint8_t GetYRes()
+    {
+        return Type::Max_Y;
     }
 
     static void SetContrast(uint8_t con)

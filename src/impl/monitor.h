@@ -24,26 +24,35 @@
 #define MONITOR_H
 
 #include <atomic>
+#include <string_view>
+#include <utility>
 
 namespace monitor {
 
 // AdcBat1 is a single element of 2S battery connected to GND
 enum AdcChannels { AdcBat1, AdcMain, AdcVBat, AdcChNumber };
 
-using std::atomic_uint16_t;
-using adc_data_t = atomic_uint16_t[AdcChNumber];
+using a16_t = std::atomic_uint16_t;
+using adc_data_t = a16_t[AdcChNumber];
+using std::to_underlying;
+using sv = std::string_view;
 
 // 85% battery charge by default;
-extern atomic_uint16_t chargeCutoff;
+extern a16_t chargeCutoff;
 // 55% battery charge by default
-extern atomic_uint16_t idleDischargeCutoff;
+extern a16_t idleDischargeCutoff;
 
 enum class State : uint16_t { Idle, Trickle, Discharge, Charge };
 extern std::atomic<State> state;
-extern const char* stateString[];
-static inline const char* toString(decltype(state)& state)
+extern const sv stateString[];
+static inline sv toString(decltype(state)& state)
 {
-    return stateString[(uint16_t)state.load(std::memory_order_relaxed)];
+    return stateString[to_underlying(state.load(std::memory_order_relaxed))];
+}
+
+static inline sv toString(State& st)
+{
+    return stateString[to_underlying(st)];
 }
 
 extern adc_data_t voltages;

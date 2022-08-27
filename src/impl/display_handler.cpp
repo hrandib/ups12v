@@ -27,6 +27,7 @@
 
 #include "monitor.h"
 #include "ssd1306.h"
+#include "type_traits_ex.h"
 #include <cstdio>
 #include <cstdlib>
 
@@ -38,6 +39,12 @@ using Scl = Pa6;
 using Sda = Pa7;
 using Twi = i2c::SoftTwi<Scl, Sda>;
 using Disp = ssd1306<Twi, ssd1306_128x32>;
+
+static constexpr size_t FONT_WIDTH = 5;
+
+// 1 pixel shift per ~127 secs
+static constexpr size_t SHIFT_PERIOD_EXTENT = 7;
+static constexpr auto CYCLE_MASK = Utils::NumberToMask_v<SHIFT_PERIOD_EXTENT>;
 
 streams::DispStream<Disp> ds;
 
@@ -53,29 +60,113 @@ static std::pair<uint16_t, uint16_t> mv2v(uint16_t val)
     return {integer, decimals};
 }
 
+static inline uint8_t getStateLineLen(monitor::State st)
+{
+    static constexpr uint8_t CHAR_WIDTH = (FONT_WIDTH + 1) * 2; // char width + spacing for the double size text
+    return monitor::toString(st).length() * CHAR_WIDTH;
+}
+
+static std::pair<uint8_t, uint8_t> getStateShift(monitor::State st)
+{
+    using enum monitor::State;
+    static uint8_t cycle;
+    static uint8_t shift;
+    static auto prevState = Idle;
+    static bool shiftReverse;
+    if(st != prevState) {
+        prevState = st;
+        shift = 0;
+    }
+    else if((++cycle & CYCLE_MASK) == CYCLE_MASK) {
+        if(!shiftReverse) {
+            ++shift;
+            if(shift + getStateLineLen(st) > Disp::GetXRes()) {
+                --shift;
+                shiftReverse = true;
+            }
+        }
+        else {
+            --shift;
+            if(shift == 0xFF) {
+                ++shift;
+                shiftReverse = false;
+            }
+        }
+    }
+    return {shift, shiftReverse ? 3 : 0};
+}
+
+constexpr char V12_LABEL_OUTPUT[] = "Output";
+// length must be equal to the previous to preserve formatting
+constexpr char V12_LABEL_INPUT[] = "Input ";
+constexpr char BAT_BAL_LABELS[] = " VBat   Bal ";
+
+static uint8_t getStaticTextShift()
+{
+    static constexpr uint8_t CHAR_WIDTH = FONT_WIDTH + 1; // char width + spacing
+    static constexpr size_t TEXT_LINE_LEN = (sizeof(V12_LABEL_OUTPUT) - 1 + sizeof(BAT_BAL_LABELS) - 1) * CHAR_WIDTH;
+    static uint8_t cycle;
+    static uint8_t shift;
+    static bool shiftReverse;
+    if((++cycle & CYCLE_MASK) == CYCLE_MASK) {
+        if(!shiftReverse) {
+            ++shift;
+            if(shift + TEXT_LINE_LEN > Disp::GetXRes()) {
+                --shift;
+                shiftReverse = true;
+            }
+        }
+        else {
+            --shift;
+            if(shift == 0xFF) {
+                ++shift;
+                shiftReverse = false;
+            }
+        }
+    }
+    return shift;
+}
+
 static void displayStatus()
 {
     using namespace monitor;
-    //    if(state != State::Idle) {
-    Disp::SetXY(0, 0);
-    chprintf(ds.set2xFontSize(true).getBase(), "%-10s", toString(state));
-    Disp::SetXY(0, 2);
-    const char* labelVMain = state == State::Discharge ? "Output" : "Input ";
-    chprintf(ds.set2xFontSize(false).getBase(), "%s  VBat  Balance", labelVMain);
-    Disp::SetXY(0, 3);
+    using enum State;
+
+    static uint8_t prevStateYpos;
+    State st = state;
+    auto [stateXpos, stateYpos] = getStateShift(st);
+    // Clear possible tail artefacts during shifting
+    if(stateXpos > 0) {
+        Disp::Fill(stateXpos - 1, 1, stateYpos, 2);
+    }
+    if(stateYpos != prevStateYpos) {
+        prevStateYpos = stateYpos;
+        Disp::Fill();
+    }
+    auto valuesXpos = getStaticTextShift();
+    auto valuesYpos = 0 + (!stateYpos ? 2 : 0);
+    // Clear possible tail artefacts during shifting
+    if(valuesXpos > 0) {
+        Disp::Fill(valuesXpos - 1, 1, valuesYpos, 2);
+    }
+    Disp::SetXY(stateXpos, stateYpos);
+    chprintf(ds.set2xFontSize(true).getBase(), "%s", toString(st).data());
+    Disp::SetXY(valuesXpos, valuesYpos);
+    const char* labelVMain = st == Discharge ? V12_LABEL_OUTPUT : V12_LABEL_INPUT;
+    chprintf(ds.set2xFontSize(false).getBase(), "%s%s", labelVMain, BAT_BAL_LABELS);
+    Disp::SetXY(valuesXpos, valuesYpos + 1);
     auto vBat = voltages[AdcVBat].load(std::memory_order_relaxed);
     auto vMain = voltages[AdcMain].load(std::memory_order_relaxed);
-    auto vBal = vBat - (voltages[AdcBat1].load(std::memory_order_relaxed) * 2);
+    auto vBal = abs(vBat - (voltages[AdcBat1].load(std::memory_order_relaxed) * 2));
     auto vBatFixed = mv2v(vBat);
     auto vMainFixed = mv2v(vMain);
     chprintf(ds.getBase(),
-             "%u.%02uV  %u.%02uV  %dmV ",
+             "%u.%02uV %u.%02uV %3dmV",
              vMainFixed.first,
              vMainFixed.second,
              vBatFixed.first,
              vBatFixed.second,
              vBal);
-    //    }
 }
 
 static THD_WORKING_AREA(DISP_WA_SIZE, 256);
@@ -86,13 +177,13 @@ THD_FUNCTION(displayThread, )
     chThdSleepMilliseconds(100);
     Disp::Init();
     Disp::Fill();
-    Disp::SetContrast(10);
+    Disp::SetContrast(0);
     chprintf(ds.set2xFontSize(true).getBase(), "  12V UPS");
     chThdSleepSeconds(3);
     Disp::Fill();
     while(true) {
         displayStatus();
-        chThdSleepSeconds(2);
+        chThdSleepSeconds(1);
     }
 }
 

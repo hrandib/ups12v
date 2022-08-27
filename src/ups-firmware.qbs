@@ -37,7 +37,7 @@ Project {
             ]
 
             cpp.cLanguageVersion: "gnu11"
-            cpp.cxxLanguageVersion: "gnu++20"
+            cpp.cxxLanguageVersion: "gnu++2b"
 
             cpp.includePaths: [
                 "config",
