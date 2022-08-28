@@ -45,21 +45,28 @@ static const ShellCommand commands[] = {{"poll", cmd_poll},
                                         {nullptr, nullptr}};
 static char histbuf[128];
 static const ShellConfig shell_cfg = {(BaseSequentialStream*)&SDU1, commands, histbuf, 128};
+constexpr char CTRL_C = 0x03;
 
 void cmd_poll(BaseSequentialStream* chp, int argc, char* /*argv*/[])
 {
     if(!argc) {
         using namespace monitor;
         auto* asyncCh = (BaseAsynchronousChannel*)chp;
-        while(chnGetTimeout(asyncCh, TIME_IMMEDIATE) == MSG_TIMEOUT) {
-
+        while(true) {
             chprintf(
               chp, "%u  %u  %s\r\n", (uint16_t)voltages[AdcMain], (uint16_t)voltages[AdcVBat], toString(state).data());
-            chThdSleepSeconds(1);
+            if(auto msg = chnGetTimeout(asyncCh, TIME_S2I(1)); msg == CTRL_C) {
+                break;
+            }
+            else if(msg != MSG_TIMEOUT) {
+                chThdSleepSeconds(1);
+            }
         }
     }
     else {
-        shellUsage(chp, "Continuously reports Main(Output/Input), VBAT voltages in mV and the current state");
+        shellUsage(chp,
+                   "Continuously reports Main(Output/Input), VBAT voltages in mV and the current state\r\n"
+                   "  Press CTRL-C to exit");
     }
 }
 
@@ -68,18 +75,25 @@ void cmd_poll_aux(BaseSequentialStream* chp, int argc, char* /*argv*/[])
     if(!argc) {
         using namespace monitor;
         auto* asyncCh = (BaseAsynchronousChannel*)chp;
-        while(chnGetTimeout(asyncCh, TIME_IMMEDIATE) == MSG_TIMEOUT) {
+        while(true) {
             chprintf(chp,
                      "%u  %u  %u  %s\r\n",
                      (uint16_t)voltages[AdcBat1],
                      (uint16_t)voltages[AdcVBat] - voltages[AdcBat1],
                      (uint16_t)voltages[AdcMain],
                      toString(state).data());
-            chThdSleepSeconds(1);
+            if(auto msg = chnGetTimeout(asyncCh, TIME_S2I(1)); msg == CTRL_C) {
+                break;
+            }
+            else if(msg != MSG_TIMEOUT) {
+                chThdSleepSeconds(1);
+            }
         }
     }
     else {
-        shellUsage(chp, "Continuously reports BAT1, BAT2, Main voltages in mV and the current state");
+        shellUsage(chp,
+                   "Continuously reports BAT1, BAT2, Main voltages in mV and the current state\r\n"
+                   "  Press CTRL-C to exit");
     }
 }
 
