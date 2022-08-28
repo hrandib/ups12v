@@ -32,13 +32,11 @@
 #include <cstdlib>
 
 static void cmd_poll(BaseSequentialStream* chp, int argc, char* argv[]);
-static void cmd_poll_aux(BaseSequentialStream* chp, int argc, char* argv[]);
 static void cmd_cutoff_charge(BaseSequentialStream* chp, int argc, char* argv[]);
 static void cmd_cutoff_discharge(BaseSequentialStream* chp, int argc, char* argv[]);
 static void print_cutoff(BaseSequentialStream* chp, int argc, char* argv[]);
 
 static const ShellCommand commands[] = {{"poll", cmd_poll},
-                                        {"poll-aux", cmd_poll_aux},
                                         {"limit-charge", cmd_cutoff_charge},
                                         {"limit-discharge", cmd_cutoff_discharge},
                                         {"limits", print_cutoff},
@@ -53,8 +51,9 @@ void cmd_poll(BaseSequentialStream* chp, int argc, char* /*argv*/[])
         using namespace monitor;
         auto* asyncCh = (BaseAsynchronousChannel*)chp;
         while(true) {
-            chprintf(
-              chp, "%u  %u  %s\r\n", (uint16_t)voltages[AdcMain], (uint16_t)voltages[AdcVBat], toString(state).data());
+            uint16_t vBat = voltages[AdcVBat].load(std::memory_order_relaxed);
+            uint16_t vBal = vBat - (voltages[AdcBat1].load(std::memory_order_relaxed) * 2);
+            chprintf(chp, "%u  %u  %u  %s\r\n", (uint16_t)voltages[AdcMain], vBat, vBal, toString(state).data());
             if(auto msg = chnGetTimeout(asyncCh, TIME_S2I(1)); msg == CTRL_C) {
                 break;
             }
@@ -65,35 +64,8 @@ void cmd_poll(BaseSequentialStream* chp, int argc, char* /*argv*/[])
     }
     else {
         shellUsage(chp,
-                   "Continuously reports Main(Output/Input), VBAT voltages in mV and the current state\r\n"
-                   "  Press CTRL-C to exit");
-    }
-}
-
-void cmd_poll_aux(BaseSequentialStream* chp, int argc, char* /*argv*/[])
-{
-    if(!argc) {
-        using namespace monitor;
-        auto* asyncCh = (BaseAsynchronousChannel*)chp;
-        while(true) {
-            chprintf(chp,
-                     "%u  %u  %u  %s\r\n",
-                     (uint16_t)voltages[AdcBat1],
-                     (uint16_t)voltages[AdcVBat] - voltages[AdcBat1],
-                     (uint16_t)voltages[AdcMain],
-                     toString(state).data());
-            if(auto msg = chnGetTimeout(asyncCh, TIME_S2I(1)); msg == CTRL_C) {
-                break;
-            }
-            else if(msg != MSG_TIMEOUT) {
-                chThdSleepSeconds(1);
-            }
-        }
-    }
-    else {
-        shellUsage(chp,
-                   "Continuously reports BAT1, BAT2, Main voltages in mV and the current state\r\n"
-                   "  Press CTRL-C to exit");
+                   "Continuously reports Main(Output/Input), VBAT, BAT2-BAT1 difference voltages\r\n"
+                   "  in mV and the current state\r\n  Press CTRL-C to exit");
     }
 }
 

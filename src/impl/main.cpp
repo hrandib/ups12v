@@ -68,8 +68,8 @@ int main()
         switch(state) {
             using enum State;
             case Idle:
-                onTime = 1000;
-                offTime = 1;
+                onTime = 10000;
+                offTime = 20;
                 break;
             case Trickle:
                 onTime = 4000;

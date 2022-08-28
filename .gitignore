@@ -2,3 +2,5 @@ Backup*.cdr
 *(Security copy)
 *$bak~
 build-*/
+.idea/
+daemon.iml
