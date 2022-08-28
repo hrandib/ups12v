@@ -53,7 +53,8 @@ void cmd_poll(BaseSequentialStream* chp, int argc, char* /*argv*/[])
         auto* asyncCh = (BaseAsynchronousChannel*)chp;
         while(chnGetTimeout(asyncCh, TIME_IMMEDIATE) == MSG_TIMEOUT) {
 
-            chprintf(chp, "%u  %u  %s\r\n", (uint16_t)voltages[AdcMain], (uint16_t)voltages[AdcVBat], toString(state));
+            chprintf(
+              chp, "%u  %u  %s\r\n", (uint16_t)voltages[AdcMain], (uint16_t)voltages[AdcVBat], toString(state).data());
             chThdSleepSeconds(1);
         }
     }
@@ -73,7 +74,7 @@ void cmd_poll_aux(BaseSequentialStream* chp, int argc, char* /*argv*/[])
                      (uint16_t)voltages[AdcBat1],
                      (uint16_t)voltages[AdcVBat] - voltages[AdcBat1],
                      (uint16_t)voltages[AdcMain],
-                     toString(state));
+                     toString(state).data());
             chThdSleepSeconds(1);
         }
     }
