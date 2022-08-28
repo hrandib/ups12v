@@ -62,9 +62,31 @@ int main()
     display::run();
     shellRun();
 
+    using namespace monitor;
+    uint16_t onTime{}, offTime{};
     while(true) {
-        systime_t time = serusbcfg.usbp->state == USB_ACTIVE ? 100 : 1000;
-        palToggleLine(LINE_LED);
-        chThdSleepMilliseconds(time);
+        switch(state) {
+            using enum State;
+            case Idle:
+                onTime = 1000;
+                offTime = 1;
+                break;
+            case Trickle:
+                onTime = 4000;
+                offTime = 50;
+                break;
+            case Discharge:
+                onTime = 50;
+                offTime = 1000;
+                break;
+            case Charge:
+                onTime = 1000;
+                offTime = 100;
+                break;
+        }
+        palSetLine(LINE_LED);
+        chThdSleepMilliseconds(onTime);
+        palClearLine(LINE_LED);
+        chThdSleepMilliseconds(offTime);
     }
 }
