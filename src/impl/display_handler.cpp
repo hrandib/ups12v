@@ -76,6 +76,7 @@ static std::pair<uint8_t, uint8_t> getStateShift(monitor::State st)
     if(st != prevState) {
         prevState = st;
         shift = 0;
+        shiftReverse = false;
     }
     else if((++cycle & CYCLE_MASK) == CYCLE_MASK) {
         if(!shiftReverse) {
