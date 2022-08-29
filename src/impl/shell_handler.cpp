@@ -52,8 +52,8 @@ void cmd_poll(BaseSequentialStream* chp, int argc, char* /*argv*/[])
         auto* asyncCh = (BaseAsynchronousChannel*)chp;
         while(true) {
             uint16_t vBat = voltages[AdcVBat].load(std::memory_order_relaxed);
-            uint16_t vBal = vBat - (voltages[AdcBat1].load(std::memory_order_relaxed) * 2);
-            chprintf(chp, "%u  %u  %u  %s\r\n", (uint16_t)voltages[AdcMain], vBat, vBal, toString(state).data());
+            auto vBal = vBat - (voltages[AdcBat1].load(std::memory_order_relaxed) * 2);
+            chprintf(chp, "%u  %u  %d  %s\r\n", (uint16_t)voltages[AdcMain], vBat, vBal, toString(state).data());
             if(auto msg = chnGetTimeout(asyncCh, TIME_S2I(1)); msg == CTRL_C) {
                 break;
             }
