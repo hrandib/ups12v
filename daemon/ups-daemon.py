@@ -6,7 +6,13 @@ import signal
 import os
 
 conf = configparser.ConfigParser()
-conf.read('ups.conf')
+
+files = conf.read(['/etc/ups-daemon.conf', 'ups-daemon.conf'])
+if files:
+    print(f'Config path: {files}')
+else:
+    print('Config file is not accessible, exiting')
+    exit(-2)
 
 ser = serial.Serial('/dev/' + conf.get('UPS', 'Tty', fallback='ttyACM0'), timeout=0.05)
 MAX_INPUT_LEN = 512

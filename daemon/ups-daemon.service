@@ -1,0 +1,12 @@
+[Unit]
+Description=UPS daemon
+After=network.target
+
+[Service]
+ExecStart=/usr/local/sbin/ups-daemon.py
+PIDFile=/run/ups-daemon.pid
+RestartSec=5
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
