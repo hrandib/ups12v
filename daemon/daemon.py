@@ -2,6 +2,8 @@
 
 import serial
 
+
+
 ser = serial.Serial('/dev/ttyACM0', timeout=5)
 ser.write(b'\x03\r')
 ser.reset_input_buffer()
