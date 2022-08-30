@@ -50,7 +50,6 @@ constexpr char CTRL_C = 0x03;
 static uint32_t convertVoltage2Percents(uint32_t val, const bat_lut_t& lut)
 {
     using namespace std;
-    val /= 2;
     if(val <= lut.front().first) {
         return 0;
     }
@@ -117,8 +116,8 @@ static void cutoff(const char* what, std::atomic_uint16_t& cutoffVal, BaseSequen
                 chprintf(chp, "The value is not in valid range\r\n");
                 break;
             }
-            chprintf(chp, "Per element: %umV, Battery: %umV\r\n", val, val * 2);
-            cutoffVal = val * 2;
+            chprintf(chp, "Per element: %umV, Battery: %umV\r\n", val / 2, val);
+            cutoffVal = val;
             return;
         }
     } while(false);

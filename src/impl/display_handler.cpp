@@ -66,15 +66,13 @@ static inline uint8_t getStateLineLen(monitor::State st)
     return monitor::toString(st).length() * CHAR_WIDTH;
 }
 
-static std::pair<uint8_t, uint8_t> getStateShift(monitor::State st)
+static std::pair<uint8_t, uint8_t> getStateShift(monitor::State st, bool stateChanged)
 {
     using enum monitor::State;
     static uint8_t cycle;
     static uint8_t shift;
-    static auto prevState = Idle;
     static bool shiftReverse;
-    if(st != prevState) {
-        prevState = st;
+    if(stateChanged) {
         shift = 0;
         shiftReverse = false;
     }
@@ -134,9 +132,15 @@ static void displayStatus()
     using enum State;
 
     static uint8_t prevStateYpos;
+    static State prevState{};
     State st = state;
-    auto [stateXpos, stateYpos] = getStateShift(st);
+    bool stateChanged = st != prevState;
+    auto [stateXpos, stateYpos] = getStateShift(st, stateChanged);
     // Clear possible tail artefacts during shifting
+    if(stateChanged) {
+        prevState = st;
+        Disp::Fill();
+    }
     if(stateXpos > 0) {
         Disp::Fill(stateXpos - 1, 1, stateYpos, 2);
     }
