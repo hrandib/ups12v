@@ -27,6 +27,7 @@
 // clang-format on
 
 #include "shell_handler.h"
+#include "cal_data.h"
 #include "monitor.h"
 #include "usbcfg.h"
 #include <cstdlib>
@@ -46,27 +47,10 @@ static char histbuf[128];
 static const ShellConfig shell_cfg = {(BaseSequentialStream*)&SDU1, commands, histbuf, 128};
 constexpr char CTRL_C = 0x03;
 
-static inline uint32_t convertDischargeVoltage2Percents(uint32_t val)
+static uint32_t convertVoltage2Percents(uint32_t val, const bat_lut_t& lut)
 {
     using namespace std;
-    static constexpr array<pair<uint16_t, uint16_t>, 18> lut{{{6250, 0},
-                                                              {6750, 6},
-                                                              {6970, 12},
-                                                              {7100, 18},
-                                                              {7210, 24},
-                                                              {7280, 30},
-                                                              {7330, 36},
-                                                              {7380, 42},
-                                                              {7420, 48},
-                                                              {7460, 54},
-                                                              {7510, 60},
-                                                              {7560, 66},
-                                                              {7630, 72},
-                                                              {7690, 78},
-                                                              {7750, 84},
-                                                              {7810, 90},
-                                                              {7870, 96},
-                                                              {7910, 100}}};
+    val /= 2;
     if(val <= lut.front().first) {
         return 0;
     }
@@ -88,23 +72,19 @@ void cmd_poll(BaseSequentialStream* chp, int argc, char* /*argv*/[])
 {
     if(!argc) {
         using namespace monitor;
+        using enum State;
         auto* asyncCh = (BaseAsynchronousChannel*)chp;
         while(true) {
             uint16_t vBat = voltages[AdcVBat].load(std::memory_order_relaxed);
             auto vBal = vBat - (voltages[AdcBat1].load(std::memory_order_relaxed) * 2);
-            if(state == State::Discharge) {
-                auto dischargePercents = convertDischargeVoltage2Percents(vBat);
-                chprintf(chp,
-                         "%u  %u  %d  %u%% %s\r\n",
-                         (uint16_t)voltages[AdcMain],
-                         vBat,
-                         vBal,
-                         dischargePercents,
-                         toString(state).data());
-            }
-            else {
-                chprintf(chp, "%u  %u  %d  %s\r\n", (uint16_t)voltages[AdcMain], vBat, vBal, toString(state).data());
-            }
+            auto percents = convertVoltage2Percents(vBat, (state == Discharge) ? DISCHARGE_LUT : CHARGE_LUT);
+            chprintf(chp,
+                     "%u  %u  %d  %u%%  %s\r\n",
+                     (uint16_t)voltages[AdcMain],
+                     vBat,
+                     vBal,
+                     percents,
+                     toString(state).data());
             if(auto msg = chnGetTimeout(asyncCh, TIME_S2I(1)); msg == CTRL_C) {
                 break;
             }
@@ -122,9 +102,7 @@ void cmd_poll(BaseSequentialStream* chp, int argc, char* /*argv*/[])
 
 static inline uint32_t convertChargePercents2Voltage(uint32_t val)
 {
-    //                              50%   55%   60%   65%   70%   75%   80%   85%   90%   95%   100%
-    static constexpr uint16_t lut[]{3840, 3850, 3870, 3910, 3950, 3980, 4020, 4080, 4110, 4150, 4200};
-    return lut[(val - 50) / 5];
+    return CHARGE_LUT[((val - 50) / 5) + 3].first;
 }
 
 static void cutoff(const char* what, std::atomic_uint16_t& cutoffVal, BaseSequentialStream* chp, int argc, char* argv[])

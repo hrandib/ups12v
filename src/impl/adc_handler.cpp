@@ -84,7 +84,7 @@ msg_t getVoltages(monitor::adc_data_t& voltages)
         }
         uint32_t vdda = getVdda(avgBuf[ADC_VREF_CHANNEL]);
         for(size_t i{}; i < monitor::AdcChNumber; ++i) {
-            uint16_t val = ((uint64_t)avgBuf[i] * vdda * CAL_DATA[i].first) / (FULL_SCALE * CAL_DATA[i].second);
+            uint16_t val = ((uint64_t)avgBuf[i] * vdda * CAL_DATA[i]) / (FULL_SCALE * 1000 * ADC_GRP_BUF_DEPTH);
             voltages[i] = val;
         }
     }
