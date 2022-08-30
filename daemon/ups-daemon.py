@@ -14,7 +14,7 @@ else:
     print('Config file is not accessible, exiting')
     exit(-2)
 
-ser = serial.Serial('/dev/' + conf.get('UPS', 'Tty', fallback='ttyACM0'), timeout=0.05)
+ser = serial.Serial('/dev/' + conf.get('UPS', 'Tty', fallback='ttyACM0'), timeout=0.2)
 MAX_INPUT_LEN = 512
 
 
@@ -87,7 +87,7 @@ def cancel_shutdown():
 
 
 def log_db(v12, vbat, diff, level, state):
-    print(f'To DB: {v12} {vbat} {diff} {level} {state}')
+    print(f'To DB: {v12} {vbat} {diff} {level} {state}', flush=True)
 
 
 def log_dummy(*args):
@@ -96,9 +96,10 @@ def log_dummy(*args):
 
 log = log_db if conf.has_option('INFLUXDB', "Host") else log_dummy
 
-print(send_command('poll'))
+print(send_command('poll'), flush=True)
 ser.timeout = 2
 prev_level = 0
+prev_state = 'IDLE'
 while True:
     v12, vbat, diff, percent, state = ser.readline().split()
     v12 = int(v12)
@@ -106,12 +107,20 @@ while True:
     diff = int(diff)
     level = int(percent[:-1])
     state = state.decode('utf8')
-    if (state in ['DISCHARGE', 'IDLE'] and prev_level > level) \
-            or (state in ['CHARGE', 'TRICKLE'] and prev_level < level):
+    if prev_state != state:
+        prev_state = state
+        if state in ['IDLE', 'DISCHARGE']:
+            prev_level = 100
+        elif state == 'CHARGE':
+            prev_level = 0
+    if (state in ['IDLE', 'DISCHARGE'] and prev_level > level) \
+            or (state == 'CHARGE' and prev_level < level) \
+            or (state == 'TRICKLE' and prev_level != level):
         prev_level = level
-        log(v12, vbat, diff, level, state)
         if level % 5 == 0:
-            print(f'State: {state} {level}%')  # system log
+            print(f'State: {state} {level}%', flush=True)  # system log
+    if state in ['CHARGE', 'DISCHARGE']:
+        log(v12, vbat, diff, level, state)
     if state == 'DISCHARGE' and level <= shutdown_threshold:
         shutdown()
     if state == 'CHARGE' and shutdown_triggered:

@@ -1,5 +1,8 @@
 [Unit]
 Description=UPS daemon
+ConditionPathExists=/etc/ups-daemon.conf
+StartLimitIntervalSec=300
+StartLimitBurst=5
 After=network.target
 
 [Service]
@@ -7,6 +10,8 @@ ExecStart=/usr/local/sbin/ups-daemon.py
 PIDFile=/run/ups-daemon.pid
 RestartSec=5
 Restart=on-failure
+StandardOutput=inherit
+StandardError=inherit
 
 [Install]
 WantedBy=multi-user.target
