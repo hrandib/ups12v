@@ -3,6 +3,7 @@
 import serial
 import configparser
 import signal
+import os
 
 conf = configparser.ConfigParser()
 conf.read('ups.conf')
@@ -43,18 +44,16 @@ def send_command(*cmd_with_args):
 
 def set_limits():
     ups = conf['UPS']
-    print("Limit charge >", end=' ')
     if conf.has_option('UPS', 'LimitCharge'):
-        res = send_command('limit-charge', ups['LimitCharge'])
+        val = ups['LimitCharge']
+        print(f"Limit charge to {val}% >", end=' ')
+        res = send_command('limit-charge', val)
         print(res)
-    else:
-        print("As is, no overwrite")
-    print("Limit idle discharge >", end=' ')
     if conf.has_option('UPS', 'LimitIdleDischarge'):
-        res = send_command('limit-discharge', ups['LimitIdleDischarge'])
+        val = ups['LimitIdleDischarge']
+        print(f"Limit idle discharge {val}% >", end=' ')
+        res = send_command('limit-discharge', val)
         print(res)
-    else:
-        print("As is, no overwrite")
 
 
 print(send_command("info"))
@@ -63,20 +62,52 @@ set_limits()
 shutdown_threshold = conf.getint('UPS', 'ShutdownThreshold', fallback=30)
 print(f'Shutdown will be initiated reaching {shutdown_threshold}% battery level during discharge')
 
+shutdown_triggered = False
+
 
 def shutdown():
-    print('Shutdown started')
+    global shutdown_triggered
+    if not shutdown_triggered:
+        print('Shutdown initiated')
+        shutdown_triggered = True
+        os.system('shutdown +1')
 
 
-send_command('poll')
+def cancel_shutdown():
+    global shutdown_triggered
+    print('Shutdown canceling')
+    shutdown_triggered = False
+    os.system('shutdown -c')
+
+
+def log_db(v12, vbat, diff, level, state):
+    print(f'To DB: {v12} {vbat} {diff} {level} {state}')
+
+
+def log_dummy(*args):
+    pass
+
+
+log = log_db if conf.has_option('INFLUXDB', "Host") else log_dummy
+
+print(send_command('poll'))
 ser.timeout = 2
+prev_level = 0
 while True:
-    v12, vbat, diff, percent, status = ser.readline().split()
+    v12, vbat, diff, percent, state = ser.readline().split()
     v12 = int(v12)
     vbat = int(vbat)
     diff = int(diff)
-    percent = int(percent[:-1])
-    status = status.decode('utf8')
-    if status == 'DISCHARGE' and percent <= shutdown_threshold:
+    level = int(percent[:-1])
+    state = state.decode('utf8')
+    if (state in ['DISCHARGE', 'IDLE'] and prev_level > level) \
+            or (state in ['CHARGE', 'TRICKLE'] and prev_level < level):
+        prev_level = level
+        log(v12, vbat, diff, level, state)
+        if level % 5 == 0:
+            print(f'State: {state} {level}%')  # system log
+    if state == 'DISCHARGE' and level <= shutdown_threshold:
         shutdown()
-    print(v12, vbat, diff, percent, status)
+    if state == 'CHARGE' and shutdown_triggered:
+        cancel_shutdown()
+
