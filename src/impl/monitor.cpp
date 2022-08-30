@@ -30,6 +30,21 @@ extern msg_t getVoltages(monitor::adc_data_t& voltages);
 
 namespace monitor {
 
+static constexpr uint16_t CUTOFF_DEFAULT = 4100;
+
+// 85% battery charge by default
+a16_t chargeCutoff = CUTOFF_DEFAULT * 2;
+// 55% battery charge by default
+a16_t idleDischargeCutoff = 3950U * 2;
+
+std::atomic<State> state;
+adc_data_t voltages;
+
+constexpr sv stateString[] = {"IDLE", "TRICKLE", "DISCHARGE", "CHARGE"};
+
+constexpr uint16_t SWITCH_12V_THRESHOLD = 11900U;
+constexpr uint16_t TRICKLE_HYST = 100U;
+
 template<typename T>
 class MovingAverageBuf
 {
@@ -55,27 +70,22 @@ public:
     }
 };
 
-static constexpr uint16_t CUTOFF_DEFAULT = 4100;
-
-// 85% battery charge by default
-a16_t chargeCutoff = CUTOFF_DEFAULT * 2;
-// 55% battery charge by default
-a16_t idleDischargeCutoff = 3950U * 2;
-
-std::atomic<State> state;
-adc_data_t voltages;
-
-constexpr sv stateString[] = {"IDLE", "TRICKLE", "DISCHARGE", "CHARGE"};
-
-constexpr uint16_t SWITCH_12V_THRESHOLD = 11900U;
-constexpr uint16_t TRICKLE_HYST = 100U;
-
 std::array<MovingAverageBuf<uint16_t>, AdcChNumber> maArray{{CUTOFF_DEFAULT, 12000, CUTOFF_DEFAULT * 2}};
+
+/*
+ * Watchdog deadline set to less than 1s (LSI=40000 / (32 * 1000)).
+ */
+static const WDGConfig wdgcfg = {
+  .pr = STM32_IWDG_PR_32,
+  .rlr = STM32_IWDG_RL(1000),
+  .winr = STM32_IWDG_WIN_DISABLED,
+};
 
 static THD_WORKING_AREA(MONITOR_WA_SIZE, 128);
 THD_FUNCTION(monitorThread, )
 {
     using enum AdcChannels;
+    wdgStart(&WDGD1, &wdgcfg);
     while(true) {
         adc_data_t temp_voltages;
         getVoltages(temp_voltages);
@@ -139,6 +149,7 @@ THD_FUNCTION(monitorThread, )
                 };
                 break;
         }
+        wdgReset(&WDGD1);
         chThdSleepMilliseconds(200);
     }
 }

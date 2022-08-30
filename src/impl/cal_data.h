@@ -52,10 +52,9 @@ static constexpr bat_lut_t DISCHARGE_LUT{{{6250, 0},
                                           {7630, 72},
                                           {7910, 100}}};
 
-// TODO: To evaluate and fill first 3 entries
 static constexpr bat_lut_t CHARGE_LUT{{{3500, 0},
-                                       {3600, 10},
-                                       {3700, 30},
+                                       {3600, 5},
+                                       {3700, 10},
                                        {3840, 50},
                                        {3850, 55},
                                        {3870, 60},
