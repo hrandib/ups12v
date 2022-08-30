@@ -30,6 +30,7 @@
 #include "monitor.h"
 #include "usbcfg.h"
 #include <cstdlib>
+#include <ranges>
 
 static void cmd_poll(BaseSequentialStream* chp, int argc, char* argv[]);
 static void cmd_cutoff_charge(BaseSequentialStream* chp, int argc, char* argv[]);
@@ -45,6 +46,44 @@ static char histbuf[128];
 static const ShellConfig shell_cfg = {(BaseSequentialStream*)&SDU1, commands, histbuf, 128};
 constexpr char CTRL_C = 0x03;
 
+static inline uint32_t convertDischargeVoltage2Percents(uint32_t val)
+{
+    using namespace std;
+    static constexpr array<pair<uint16_t, uint16_t>, 18> lut{{{6250, 0},
+                                                              {6750, 6},
+                                                              {6970, 12},
+                                                              {7100, 18},
+                                                              {7210, 24},
+                                                              {7280, 30},
+                                                              {7330, 36},
+                                                              {7380, 42},
+                                                              {7420, 48},
+                                                              {7460, 54},
+                                                              {7510, 60},
+                                                              {7560, 66},
+                                                              {7630, 72},
+                                                              {7690, 78},
+                                                              {7750, 84},
+                                                              {7810, 90},
+                                                              {7870, 96},
+                                                              {7910, 100}}};
+    if(val <= lut.front().first) {
+        return 0;
+    }
+    if(val >= lut.back().first) {
+        return 100;
+    }
+
+    auto result = ranges::find_if(lut, [val](auto entry) { return entry.first > val; });
+    auto prev = result - 1;
+    auto v2 = result->first;
+    auto p2 = result->second;
+    auto v1 = prev->first;
+    auto p1 = prev->second;
+    auto percent = 10 * (val - v1) * (p2 - p1) / (v2 - v1);
+    return p1 + (percent + 5) / 10;
+}
+
 void cmd_poll(BaseSequentialStream* chp, int argc, char* /*argv*/[])
 {
     if(!argc) {
@@ -53,7 +92,19 @@ void cmd_poll(BaseSequentialStream* chp, int argc, char* /*argv*/[])
         while(true) {
             uint16_t vBat = voltages[AdcVBat].load(std::memory_order_relaxed);
             auto vBal = vBat - (voltages[AdcBat1].load(std::memory_order_relaxed) * 2);
-            chprintf(chp, "%u  %u  %d  %s\r\n", (uint16_t)voltages[AdcMain], vBat, vBal, toString(state).data());
+            if(state == State::Discharge) {
+                auto dischargePercents = convertDischargeVoltage2Percents(vBat);
+                chprintf(chp,
+                         "%u  %u  %d  %u%% %s\r\n",
+                         (uint16_t)voltages[AdcMain],
+                         vBat,
+                         vBal,
+                         dischargePercents,
+                         toString(state).data());
+            }
+            else {
+                chprintf(chp, "%u  %u  %d  %s\r\n", (uint16_t)voltages[AdcMain], vBat, vBal, toString(state).data());
+            }
             if(auto msg = chnGetTimeout(asyncCh, TIME_S2I(1)); msg == CTRL_C) {
                 break;
             }
@@ -69,7 +120,7 @@ void cmd_poll(BaseSequentialStream* chp, int argc, char* /*argv*/[])
     }
 }
 
-static inline uint32_t convertPercents2Voltage(uint32_t val)
+static inline uint32_t convertChargePercents2Voltage(uint32_t val)
 {
     //                              50%   55%   60%   65%   70%   75%   80%   85%   90%   95%   100%
     static constexpr uint16_t lut[]{3840, 3850, 3870, 3910, 3950, 3980, 4020, 4080, 4110, 4150, 4200};
@@ -82,7 +133,7 @@ static void cutoff(const char* what, std::atomic_uint16_t& cutoffVal, BaseSequen
         if(argc == 1) {
             uint32_t val = atoi(argv[0]);
             if(50 <= val && val <= 100) {
-                val = convertPercents2Voltage(val);
+                val = convertChargePercents2Voltage(val);
             }
             else if(val < 3800 || 4200 < val) {
                 chprintf(chp, "The value is not in valid range\r\n");
