@@ -196,6 +196,7 @@ Project {
             files: [
                 "adc_handler.cpp",
                 "adc_handler.h",
+                "cal_data.cpp",
                 "cal_data.h",
                 "display_handler.cpp",
                 "display_handler.h",

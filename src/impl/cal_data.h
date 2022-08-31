@@ -27,43 +27,13 @@
 #include <cstdint>
 #include <tuple>
 
-// Numerator/Denominator pairs
-// Evalutated denominator should be additionally multiplied by the buf depth
-constexpr uint16_t CAL_DATA[monitor::AdcChNumber] = {
-  1384, // BAT1
-  3925, // 12V BUS
-  2664  // VBAT
-};
+// ADC voltage calibration values
 constexpr uint32_t FULL_SCALE = 4095U;
+extern const uint16_t CAL_DATA[monitor::AdcChNumber];
 
 using bat_lut_t = std::array<std::pair<uint16_t, uint16_t>, 14>;
-static constexpr bat_lut_t DISCHARGE_LUT{{{6250, 0},
-                                          {6750, 6},
-                                          {6970, 12},
-                                          {7100, 18},
-                                          {7210, 24},
-                                          {7280, 30},
-                                          {7335, 36},
-                                          {7380, 42},
-                                          {7420, 48},
-                                          {7460, 54},
-                                          {7510, 60},
-                                          {7560, 66},
-                                          {7630, 72},
-                                          {7950, 100}}};
 
-static constexpr bat_lut_t CHARGE_LUT{{{3500 * 2, 0},
-                                       {3600 * 2, 5},
-                                       {3700 * 2, 10},
-                                       {3840 * 2, 50},
-                                       {3850 * 2, 55},
-                                       {3870 * 2, 60},
-                                       {3910 * 2, 65},
-                                       {3950 * 2, 70},
-                                       {3980 * 2, 75},
-                                       {4020 * 2, 80},
-                                       {4080 * 2, 85},
-                                       {4110 * 2, 90},
-                                       {4150 * 2, 95},
-                                       {4195 * 2, 100}}};
+extern const bat_lut_t DISCHARGE_LUT;
+extern const bat_lut_t CHARGE_LUT;
+
 #endif // CAL_DATA_H

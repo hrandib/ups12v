@@ -22,8 +22,8 @@ else:
     exit(-2)
 
 ser = None
+port = conf.get('UPS', 'Tty', fallback='ttyACM0')
 try:
-    port = conf.get('UPS', 'Tty', fallback='ttyACM0')
     ser = serial.Serial('/dev/' + port, exclusive=True, timeout=0.2)
 except serial.SerialException:
     print(f'Port {port} is not available. Exiting')
