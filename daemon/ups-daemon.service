@@ -1,15 +1,13 @@
 [Unit]
 Description=UPS daemon
 ConditionPathExists=/etc/ups-daemon.conf
-StartLimitIntervalSec=300
-StartLimitBurst=5
 After=network.target
 
 [Service]
-ExecStart=/usr/local/sbin/ups-daemon.py
+ExecStart=/usr/local/sbin/ups-daemon
 PIDFile=/run/ups-daemon.pid
-RestartSec=5
-Restart=on-failure
+Restart=always
+RestartSec=30
 StandardOutput=inherit
 StandardError=inherit
 

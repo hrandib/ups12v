@@ -4,18 +4,30 @@ import serial
 import configparser
 import signal
 import os
+import time
+import functools
+
+MAX_INPUT_LEN = 512
+
+# Disable buffering
+print = functools.partial(print, flush=True)
 
 conf = configparser.ConfigParser()
 
 files = conf.read(['/etc/ups-daemon.conf', 'ups-daemon.conf'])
 if files:
-    print(f'Config path: {files}')
+    print(f'Config(s) path: {", ".join(files)}')
 else:
     print('Config file is not accessible, exiting')
     exit(-2)
 
-ser = serial.Serial('/dev/' + conf.get('UPS', 'Tty', fallback='ttyACM0'), timeout=0.2)
-MAX_INPUT_LEN = 512
+ser = None
+try:
+    port = conf.get('UPS', 'Tty', fallback='ttyACM0')
+    ser = serial.Serial('/dev/' + port, exclusive=True, timeout=0.2)
+except serial.SerialException:
+    print(f'Port {port} is not available. Exiting')
+    exit(-1)
 
 
 def signal_handler(sig, frame):
@@ -39,9 +51,9 @@ def send_command(*cmd_with_args):
         exit(-1)
     cmd = ' '.join(map(str, cmd_with_args))
     ser.write(b'\x03\r')
+    time.sleep(0.1)
     ser.reset_input_buffer()
     ser.write(bytes(f'{cmd}\r', 'utf8'))
-    ser.readline()
     ser.readline()
     output = ser.read(MAX_INPUT_LEN).decode('utf8')
     output = output[0:output.rfind('\r\n')]
@@ -62,7 +74,6 @@ def set_limits():
         print(res)
 
 
-print(send_command("info"))
 set_limits()
 
 shutdown_threshold = conf.getint('UPS', 'ShutdownThreshold', fallback=30)
@@ -87,7 +98,7 @@ def cancel_shutdown():
 
 
 def log_db(v12, vbat, diff, level, state):
-    print(f'To DB: {v12} {vbat} {diff} {level} {state}', flush=True)
+    print(f'To DB: {v12} {vbat} {diff} {level} {state}')
 
 
 def log_dummy(*args):
@@ -96,7 +107,7 @@ def log_dummy(*args):
 
 log = log_db if conf.has_option('INFLUXDB', "Host") else log_dummy
 
-print(send_command('poll'), flush=True)
+print(send_command('poll'))
 ser.timeout = 2
 prev_level = 0
 prev_state = 'IDLE'
@@ -118,7 +129,7 @@ while True:
             or (state == 'TRICKLE' and prev_level != level):
         prev_level = level
         if level % 5 == 0:
-            print(f'State: {state} {level}%', flush=True)  # system log
+            print(f'State: {state} {level}%')  # system log
     if state in ['CHARGE', 'DISCHARGE']:
         log(v12, vbat, diff, level, state)
     if state == 'DISCHARGE' and level <= shutdown_threshold:
