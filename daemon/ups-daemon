@@ -122,7 +122,7 @@ while True:
         prev_state = state
         if state in ['IDLE', 'DISCHARGE']:
             prev_level = 100
-        elif state == 'CHARGE':
+        elif state in ['TRICKLE', 'CHARGE']:
             prev_level = 0
     if (state in ['IDLE', 'DISCHARGE'] and prev_level > level) \
             or (state == 'CHARGE' and prev_level < level) \
