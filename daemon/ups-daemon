@@ -18,7 +18,7 @@ files = conf.read(['/etc/ups-daemon.conf', 'ups-daemon.conf'])
 if files:
     print(f'Config(s) path: {", ".join(files)}')
 else:
-    print('Config file is not accessible, exiting')
+    print('Config file is not accessible. Exiting')
     exit(-2)
 
 ser = None
@@ -48,6 +48,7 @@ def port_is_alive():
 
 def send_command(*cmd_with_args):
     if not port_is_alive():
+        print("Port disconnected. Exiting")
         exit(-1)
     cmd = ' '.join(map(str, cmd_with_args))
     ser.write(b'\x03\r')
@@ -106,34 +107,56 @@ def log_dummy(*args):
 
 
 log = log_db if conf.has_option('INFLUXDB', "Host") else log_dummy
+prev_message = ''
+
+
+def thin_out_print(state, level):
+    global prev_message
+    if level % 5 == 0:
+        message = f'State: {state} {level}%'
+        if prev_message != message:
+            prev_message = message
+            print(message)  # system log
+
 
 print(send_command('poll'))
-ser.timeout = 2
 prev_level = 0
 prev_state = 'IDLE'
-while True:
-    v12, vbat, diff, percent, state = ser.readline().split()
-    v12 = int(v12)
-    vbat = int(vbat)
-    diff = int(diff)
-    level = int(percent[:-1])
-    state = state.decode('utf8')
+
+
+def adjust_prev_state(state):
+    global prev_state, prev_level
     if prev_state != state:
         prev_state = state
-        if state in ['IDLE', 'DISCHARGE']:
-            prev_level = 100
-        elif state in ['TRICKLE', 'CHARGE']:
-            prev_level = 0
-    if (state in ['IDLE', 'DISCHARGE'] and prev_level > level) \
-            or (state == 'CHARGE' and prev_level < level) \
-            or (state == 'TRICKLE' and prev_level != level):
-        prev_level = level
-        if level % 5 == 0:
-            print(f'State: {state} {level}%')  # system log
-    if state in ['CHARGE', 'DISCHARGE']:
-        log(v12, vbat, diff, level, state)
-    if state == 'DISCHARGE' and level <= shutdown_threshold:
-        shutdown()
-    if state == 'CHARGE' and shutdown_triggered:
-        cancel_shutdown()
+    if state in ['IDLE', 'DISCHARGE']:
+        prev_level = 100
+    elif state in ['TRICKLE', 'CHARGE']:
+        prev_level = 0
 
+
+def main_loop():
+    global prev_state, prev_level
+    ser.timeout = 2
+    while True:
+        try:
+            args = ser.readline().split()
+        except serial.SerialException:
+            print("Port disconnected. Exiting")
+            exit(-1)
+        v12, vbat, diff, level = map(int, args[:-1])
+        state = args[-1].decode('utf8')
+        adjust_prev_state(state)
+        if (state in ['IDLE', 'DISCHARGE'] and prev_level > level) \
+                or (state == 'CHARGE' and prev_level < level) \
+                or (state == 'TRICKLE' and prev_level != level):
+            prev_level = level
+        thin_out_print(state, level)
+        if state in ['CHARGE', 'DISCHARGE', 'TRICKLE']:
+            log(v12, vbat, diff, level, state)
+        if state == 'DISCHARGE' and level <= shutdown_threshold:
+            shutdown()
+        if state == 'CHARGE' and shutdown_triggered:
+            cancel_shutdown()
+
+
+main_loop()
