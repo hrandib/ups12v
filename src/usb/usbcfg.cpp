@@ -141,17 +141,17 @@ const auto vcom_string0 = 0x0409_sdesc16;
 /*
  * Vendor string.
  */
-const auto vcom_string1 = "STMicroelectronics"_sdesc;
+const auto vcom_string1 = "github.com/hrandib"_sdesc;
 
 /*
  * Device Description string.
  */
-const auto vcom_string2 = "ChibiOS/RT Virtual COM Port"_sdesc;
+const auto vcom_string2 = "12V Uninterruptible Power Supply"_sdesc;
 
 /*
  * Serial Number string.
  */
-const auto vcom_string3 = CH_KERNEL_VERSION ""_sdesc;
+const auto vcom_string3 = "20220901"_sdesc;
 
 /*
  * Strings wrappers array.
