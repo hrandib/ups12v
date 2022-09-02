@@ -57,14 +57,23 @@ static uint32_t convertVoltage2Percents(uint32_t val, const bat_lut_t& lut)
         return 100;
     }
 
-    auto result = ranges::find_if(lut, [val](auto entry) { return entry.first > val; });
-    auto prev = result - 1;
-    auto v2 = result->first;
-    auto p2 = result->second;
-    auto v1 = prev->first;
-    auto p1 = prev->second;
-    auto percent = 10 * (val - v1) * (p2 - p1) / (v2 - v1);
-    return p1 + (percent + 5) / 10;
+    const auto result = ranges::find_if(lut, [val](auto entry) { return entry.first > val; });
+    const auto [v2, p2] = *result;
+    const auto prev = result - 1;
+    const auto [v1, p1] = *prev;
+    auto percent_offset = 10 * (val - v1) * (p2 - p1) / (v2 - v1);
+    return p1 + (percent_offset + 5) / 10;
+}
+
+static inline uint32_t convertPercents2Voltage(uint32_t val, const bat_lut_t& lut)
+{
+    using namespace std;
+    auto result = ranges::find_if(lut, [val](auto entry) { return entry.second > val; });
+    const auto [v2, p2] = *result;
+    const auto prev = result - 1;
+    const auto [v1, p1] = *prev;
+    auto volt_offset = 10 * (val - p1) * (v2 - v1) / (p2 - p1);
+    return v1 + (volt_offset + 5) / 10;
 }
 
 void cmd_poll(BaseSequentialStream* chp, int argc, char* /*argv*/[])
@@ -99,20 +108,23 @@ void cmd_poll(BaseSequentialStream* chp, int argc, char* /*argv*/[])
     }
 }
 
-static inline uint32_t convertChargePercents2Voltage(uint32_t val)
+static void cutoff(monitor::State what,
+                   std::atomic_uint16_t& cutoffVal,
+                   BaseSequentialStream* chp,
+                   int argc,
+                   char* argv[])
 {
-    return CHARGE_LUT[((val - 50) / 5) + 3].first;
-}
-
-static void cutoff(const char* what, std::atomic_uint16_t& cutoffVal, BaseSequentialStream* chp, int argc, char* argv[])
-{
+    using enum monitor::State;
+    constexpr auto minPercent = 50;
+    constexpr auto maxPercent = 100;
+    const auto& lut = (what == Charge ? CHARGE_LUT : DISCHARGE_LUT);
     do {
         if(argc == 1) {
             uint32_t val = atoi(argv[0]);
-            if(50 <= val && val <= 100) {
-                val = convertChargePercents2Voltage(val);
+            if(minPercent <= val && val <= maxPercent) {
+                val = convertPercents2Voltage(val, lut);
             }
-            else if(val < 3800 || 4200 < val) {
+            else {
                 chprintf(chp, "The value is not in valid range\r\n");
                 break;
             }
@@ -121,21 +133,20 @@ static void cutoff(const char* what, std::atomic_uint16_t& cutoffVal, BaseSequen
             return;
         }
     } while(false);
-    chprintf(chp, "Limits %s level\r\n", what);
+    chprintf(chp, "Limits %s %s level\r\n", what == Discharge ? "IDLE" : "", toString(what));
     shellUsage(chp,
-               "Set cut-off voltage or percentage.\r\n"
-               "  Set cut-off voltage if input value in the range 3800-4200\r\n"
-               "  or max charge percentage if input value in the range 50-100\r\n");
+               "Set cut-off battery level in percents.\r\n"
+               "  The input value must be in the range 50-100\r\n");
 }
 
 static void cmd_cutoff_charge(BaseSequentialStream* chp, int argc, char* argv[])
 {
-    cutoff("charge", monitor::chargeCutoff, chp, argc, argv);
+    cutoff(monitor::State::Charge, monitor::chargeCutoff, chp, argc, argv);
 }
 
 static void cmd_cutoff_discharge(BaseSequentialStream* chp, int argc, char* argv[])
 {
-    cutoff("idle discharge", monitor::idleDischargeCutoff, chp, argc, argv);
+    cutoff(monitor::State::Discharge, monitor::idleDischargeCutoff, chp, argc, argv);
 }
 
 static void print_cutoff(BaseSequentialStream* chp, int /*argc*/, char* /*argv*/[])
