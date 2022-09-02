@@ -86,13 +86,8 @@ void cmd_poll(BaseSequentialStream* chp, int argc, char* /*argv*/[])
             uint16_t vBat = voltages[AdcVBat].load(std::memory_order_relaxed);
             auto vBal = vBat - (voltages[AdcBat1].load(std::memory_order_relaxed) * 2);
             auto percents = convertVoltage2Percents(vBat, (state == Discharge) ? DISCHARGE_LUT : CHARGE_LUT);
-            chprintf(chp,
-                     "%u  %u  %d  %u%%  %s\r\n",
-                     (uint16_t)voltages[AdcMain],
-                     vBat,
-                     vBal,
-                     percents,
-                     toString(state).data());
+            chprintf(
+              chp, "%u  %u  %d  %u  %s\r\n", (uint16_t)voltages[AdcMain], vBat, vBal, percents, toString(state).data());
             if(auto msg = chnGetTimeout(asyncCh, TIME_S2I(1)); msg == CTRL_C) {
                 break;
             }
