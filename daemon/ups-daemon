@@ -108,19 +108,23 @@ def log_dummy(*args):
 
 log = log_db if conf.has_option('INFLUXDB', "Host") else log_dummy
 prev_message = ''
+prev_level = 0
 
 
 def thin_out_print(state, level):
-    global prev_message
-    if level % 5 == 0:
-        message = f'State: {state} {level}%'
-        if prev_message != message:
-            prev_message = message
-            print(message)  # system log
+    global prev_message, prev_level
+    if (state in ['IDLE', 'DISCHARGE'] and prev_level > level) \
+            or (state == 'CHARGE' and prev_level < level) \
+            or (state == 'TRICKLE' and prev_level != level):
+        prev_level = level
+        if level % 5 == 0:
+            message = f'State: {state} {level}%'
+            if prev_message != message:
+                prev_message = message
+                print(message)  # system log
 
 
 print(send_command('poll'))
-prev_level = 0
 prev_state = 'IDLE'
 
 
@@ -146,10 +150,6 @@ def main_loop():
         v12, vbat, diff, level = map(int, args[:-1])
         state = args[-1].decode('utf8')
         adjust_prev_state(state)
-        if (state in ['IDLE', 'DISCHARGE'] and prev_level > level) \
-                or (state == 'CHARGE' and prev_level < level) \
-                or (state == 'TRICKLE' and prev_level != level):
-            prev_level = level
         thin_out_print(state, level)
         if state in ['CHARGE', 'DISCHARGE', 'TRICKLE']:
             log(v12, vbat, diff, level, state)
