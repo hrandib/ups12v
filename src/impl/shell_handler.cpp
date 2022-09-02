@@ -65,7 +65,7 @@ static uint32_t convertVoltage2Percents(uint32_t val, const bat_lut_t& lut)
     return p1 + (percent_offset + 5) / 10;
 }
 
-static inline uint32_t convertPercents2Voltage(uint32_t val, const bat_lut_t& lut)
+static uint32_t convertPercents2Voltage(uint32_t val, const bat_lut_t& lut)
 {
     using namespace std;
     auto result = ranges::find_if(lut, [val](auto entry) { return entry.second > val; });
@@ -99,7 +99,7 @@ void cmd_poll(BaseSequentialStream* chp, int argc, char* /*argv*/[])
     else {
         shellUsage(chp,
                    "Continuously reports Main(Output/Input), VBAT, BAT2-BAT1 difference voltages\r\n"
-                   "  in mV and the current state\r\n  Press CTRL-C to exit");
+                   "  in mV, battery level % and the current state\r\n  Press CTRL-C to exit");
     }
 }
 
