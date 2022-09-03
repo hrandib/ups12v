@@ -117,11 +117,10 @@ def thin_out_print(state, level):
             or (state == 'CHARGE' and prev_level < level) \
             or (state == 'TRICKLE' and prev_level != level):
         prev_level = level
-        if level % 5 == 0:
-            message = f'State: {state} {level}%'
-            if prev_message != message:
-                prev_message = message
-                print(message)  # system log
+        message = f'State: {state} {level}%'
+        if prev_message != message:
+            prev_message = message
+            print(message)  # system log
 
 
 print(send_command('poll'))
@@ -132,10 +131,11 @@ def adjust_prev_state(state):
     global prev_state, prev_level
     if prev_state != state:
         prev_state = state
-    if state in ['IDLE', 'DISCHARGE']:
-        prev_level = 100
-    elif state in ['TRICKLE', 'CHARGE']:
-        prev_level = 0
+        print(f'State change: {state}')
+        if state in ['IDLE', 'DISCHARGE']:
+            prev_level = 100
+        elif state in ['TRICKLE', 'CHARGE']:
+            prev_level = 0
 
 
 def main_loop():
