@@ -151,10 +151,11 @@ if conf.has_option('INFLUXDB', 'Enable') and conf.getboolean('INFLUXDB', 'Enable
     db_writer = get_db_writer()
     if db_writer is not None:
         bucket = db_conf['Bucket']
+        measurement = db_conf['Measurement']
 
         def db_write(v12, vbat, diff, level, state):
             tp = datetime.utcnow().isoformat()
-            point = DbPoint(db_conf['Measurement']).tag("state", state).field('v12', v12).field('vbat', vbat)\
+            point = DbPoint(measurement).tag("state", state).field('v12', v12).field('vbat', vbat)\
                 .field('balance', diff).field('level', level).time(tp, WritePrecision.S)
             db_writer.write(bucket=bucket, record=point)
             # print(f'{tp} : {v12} {vbat} {diff} {level} {state}')
