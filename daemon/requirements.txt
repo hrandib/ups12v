@@ -1,1 +1,2 @@
+influxdb_client==1.32.0
 pyserial==3.5

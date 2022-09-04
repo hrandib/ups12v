@@ -6,6 +6,8 @@ import signal
 import os
 import time
 import functools
+from influxdb_client import InfluxDBClient, Point as DbPoint, WriteOptions, WritePrecision
+from datetime import datetime
 
 MAX_INPUT_LEN = 512
 
@@ -20,6 +22,8 @@ if files:
 else:
     print('Config file is not accessible. Exiting')
     exit(-2)
+
+db_conf = conf['INFLUXDB']
 
 ser = None
 port = conf.get('UPS', 'Tty', fallback='ttyACM0')
@@ -98,15 +102,6 @@ def cancel_shutdown():
     os.system('shutdown -c')
 
 
-def log_db(v12, vbat, diff, level, state):
-    print(f'To DB: {v12} {vbat} {diff} {level} {state}')
-
-
-def log_dummy(*args):
-    pass
-
-
-log = log_db if conf.has_option('INFLUXDB', "Host") else log_dummy
 prev_level = 0
 
 
@@ -133,9 +128,46 @@ def adjust_prev_state(state):
             prev_level = 0
 
 
+# InfluxDB related begin
+
+
+def get_db_writer():
+    url = db_conf['Url']
+    client = InfluxDBClient(url=url, token=db_conf['Token'], org=db_conf['Org'])
+    if client.ping():
+        print(f'Connected to the DB: {url}')
+        return client.write_api(write_options=WriteOptions(flush_interval=60_000))
+    else:
+        print(f'DB connection failed: {url}')
+        return None
+
+
+def log_dummy():
+    pass
+
+
+log_db = log_dummy
+if conf.has_option('INFLUXDB', 'Enable') and conf.getboolean('INFLUXDB', 'Enable'):
+    db_writer = get_db_writer()
+    if db_writer is not None:
+        bucket = db_conf['Bucket']
+
+        def db_write(v12, vbat, diff, level, state):
+            tp = datetime.utcnow().isoformat()
+            point = DbPoint(db_conf['Measurement']).tag("state", state).field('v12', v12).field('vbat', vbat)\
+                .field('balance', diff).field('level', level).time(tp, WritePrecision.S)
+            db_writer.write(bucket=bucket, record=point)
+            # print(f'{tp} : {v12} {vbat} {diff} {level} {state}')
+        log_db = db_write
+
+
+# InfluxDB related end
+
+
 def main_loop():
     global prev_state, prev_level
     ser.timeout = 2
+    idle_writedb_counter = 0
     while True:
         try:
             args = ser.readline().split()
@@ -146,8 +178,8 @@ def main_loop():
         state = args[-1].decode('utf8')
         adjust_prev_state(state)
         thin_out_print(state, level)
-        if state in ['CHARGE', 'DISCHARGE', 'TRICKLE']:
-            log(v12, vbat, diff, level, state)
+        if state not in ['IDLE'] or idle_writedb_counter % 120 == 0:
+            log_db(v12, vbat, diff, level, state)
         if state == 'DISCHARGE' and level <= shutdown_threshold:
             shutdown()
         if state == 'CHARGE' and shutdown_triggered:
