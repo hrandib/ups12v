@@ -178,6 +178,7 @@ def main_loop():
         state = args[-1].decode('utf8')
         adjust_prev_state(state)
         thin_out_print(state, level)
+        idle_writedb_counter += 1
         if state not in ['IDLE'] or idle_writedb_counter % 120 == 0:
             log_db(v12, vbat, diff, level, state)
         if state == 'DISCHARGE' and level <= shutdown_threshold:
