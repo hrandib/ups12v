@@ -102,7 +102,7 @@ def cancel_shutdown():
     os.system('shutdown -c')
 
 
-prev_level = 0
+prev_level = 100
 
 
 def thin_out_print(state, level):
