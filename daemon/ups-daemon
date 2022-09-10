@@ -133,7 +133,7 @@ def adjust_prev_state(state):
 
 def get_db_writer():
     url = db_conf['Url']
-    client = InfluxDBClient(url=url, token=db_conf['Token'], org=db_conf['Org'])
+    client = InfluxDBClient(url=url, token=db_conf['Token'], org=db_conf['Org'], timeout=140_000)
     if client.ping():
         print(f'Connected to the DB: {url}')
         return client.write_api(write_options=WriteOptions(flush_interval=60_000))
