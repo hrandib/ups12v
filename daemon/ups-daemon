@@ -97,9 +97,10 @@ def shutdown():
 
 def cancel_shutdown():
     global shutdown_triggered
-    print('Shutdown canceling')
-    shutdown_triggered = False
-    os.system('shutdown -c')
+    if shutdown_triggered:
+        print('Shutdown canceling')
+        shutdown_triggered = False
+        os.system('shutdown -c')
 
 
 prev_level = 100
@@ -155,7 +156,7 @@ if conf.has_option('INFLUXDB', 'Enable') and conf.getboolean('INFLUXDB', 'Enable
 
         def db_write(v12, vbat, diff, level, state):
             tp = datetime.utcnow().isoformat()
-            point = DbPoint(measurement).tag("state", state).field('v12', v12).field('vbat', vbat)\
+            point = DbPoint(measurement).tag('state', state).field('v12', v12).field('vbat', vbat)\
                 .field('balance', diff).field('level', level).time(tp, WritePrecision.S)
             db_writer.write(bucket=bucket, record=point)
             # print(f'{tp} : {v12} {vbat} {diff} {level} {state}')
@@ -180,12 +181,16 @@ def main_loop():
         adjust_prev_state(state)
         thin_out_print(state, level)
         idle_writedb_counter += 1
-        if state not in ['IDLE'] or idle_writedb_counter % 120 == 0:
-            log_db(v12, vbat, diff, level, state)
         if state == 'DISCHARGE' and level <= shutdown_threshold:
-            shutdown()
+            if v12 > 10000:
+                shutdown()
+            else:
+                cancel_shutdown()
+                print('Voltage values are unreliable, possible USB adapter disconnection. Exiting')
         if state == 'CHARGE' and shutdown_triggered:
             cancel_shutdown()
+        if state not in ['IDLE'] or idle_writedb_counter % 120 == 0:
+            log_db(v12, vbat, diff, level, state)
 
 
 main_loop()
