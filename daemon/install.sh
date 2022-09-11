@@ -6,7 +6,10 @@ else
   sudo systemctl disable --now ups-daemon
 fi
 
-sudo cp ./ups-daemon.conf /etc/
+if [ "$2" != "noconf" ]; then
+  sudo cp ./ups-daemon.conf /etc/
+fi
+
 chmod +x ./ups-daemon
 sudo cp ./ups-daemon /usr/local/sbin/
 sudo cp ./ups-daemon.service /etc/systemd/system/
