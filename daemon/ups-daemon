@@ -187,6 +187,7 @@ def main_loop():
             else:
                 cancel_shutdown()
                 print('Voltage values are unreliable, possible USB adapter disconnection. Exiting')
+                exit(-3)
         if state == 'CHARGE' and shutdown_triggered:
             cancel_shutdown()
         if state not in ['IDLE'] or idle_writedb_counter % 120 == 0:
