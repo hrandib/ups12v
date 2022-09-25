@@ -92,6 +92,8 @@ def shutdown():
     if not shutdown_triggered:
         print('Shutdown initiated')
         shutdown_triggered = True
+        if conf.has_option('UPS', 'ShutdownScript'):
+            os.system(conf.get('UPS', 'ShutdownScript'))
         os.system('shutdown +1')
 
 
