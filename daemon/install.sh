@@ -1,7 +1,7 @@
 #! /usr/bin/sh
 
 if [ "$1" != "update" ]; then
-  pip install -r ./requirements.txt
+  sudo -H pip install -r ./requirements.txt
 else
   sudo systemctl disable --now ups-daemon
 fi
